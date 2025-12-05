@@ -1,23 +1,27 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-/*
-    This is where we specify the format of the data we're going to put into
-    the database.
-    
-    @author McKilla Gorilla
-*/
-const playlistSchema = new Schema(
+const ObjectId = Schema.Types.ObjectId
+
+const PlaylistSongSchema = new Schema(
+    {
+        song: { type: ObjectId, ref: 'Song', required: true },
+        position: { type: Number, required: true }
+    },
+    { _id: false }
+)
+
+const PlaylistSchema = new Schema(
     {
         name: { type: String, required: true },
-        ownerEmail: { type: String, required: true },
-        songs: { type: [{
-            title: String,
-            artist: String,
-            year: Number,
-            youTubeId: String
-        }], required: true }
+        owner: { type: ObjectId, ref: 'User', required: true },
+        songs: { type: [PlaylistSongSchema], default: [] },
+
+        diffListeners: { type: Number, default: 0 },
+        listeners: { type: ObjectId, ref: 'User' }
     },
     { timestamps: true },
 )
 
-module.exports = mongoose.model('Playlist', playlistSchema)
+PlaylistSchema.index({ owner: 1, name: 1 }, { unique: true })
+
+module.exports = mongoose.model('Playlist', PlaylistSchema)
