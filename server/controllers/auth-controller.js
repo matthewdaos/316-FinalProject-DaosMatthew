@@ -8,25 +8,30 @@ getLoggedIn = async (req, res) => {
         if (!userId) {
             return res.status(200).json({
                 loggedIn: false,
-                user: null,
-                errorMessage: "?"
+                user: null
             })
         }
 
-        const loggedInUser = await User.findOne({ _id: userId });
+        const loggedInUser = await User.findById(userId).exec();
         console.log("loggedInUser: " + loggedInUser);
 
+        if(!loggedInUser) {
+            return res.status(200).json({ loggedIn: false, user: null });
+        }
         return res.status(200).json({
-            loggedIn: true,
+            loggedIN: true,
             user: {
+                username: loggedInUser.username,
                 firstName: loggedInUser.firstName,
                 lastName: loggedInUser.lastName,
-                email: loggedInUser.email
+                email: loggedInUser.email,
+                avatar: loggedInUser.avatar,
+                _id: loggedInUser._id
             }
         })
     } catch (err) {
         console.log("err: " + err);
-        res.json(false);
+        return res.status(500).json({ loggedIn: false, user: null });
     }
 }
 
@@ -36,30 +41,20 @@ loginUser = async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res
-                .status(400)
-                .json({ errorMessage: "Please enter all required fields." });
+            return res.status(400).json({ errorMessage: "Please enter all required fields." });
         }
 
         const existingUser = await User.findOne({ email: email });
         console.log("existingUser: " + existingUser);
         if (!existingUser) {
-            return res
-                .status(401)
-                .json({
-                    errorMessage: "Wrong email or password provided."
-                })
+            return res.status(401).json({ errorMessage: "Wrong email or password provided." })
         }
 
         console.log("provided password: " + password);
         const passwordCorrect = await bcrypt.compare(password, existingUser.passwordHash);
         if (!passwordCorrect) {
             console.log("Incorrect password");
-            return res
-                .status(401)
-                .json({
-                    errorMessage: "Wrong email or password provided."
-                })
+            return res.status(401).json({ errorMessage: "Wrong email or password provided." })
         }
 
         // LOGIN THE USER
@@ -73,9 +68,11 @@ loginUser = async (req, res) => {
         }).status(200).json({
             success: true,
             user: {
+                username: existingUser.username,
                 firstName: existingUser.firstName,
                 lastName: existingUser.lastName,  
-                email: existingUser.email              
+                email: existingUser.email,
+                avatar: existingUser.avatar             
             }
         })
 
@@ -97,39 +94,27 @@ logoutUser = async (req, res) => {
 registerUser = async (req, res) => {
     console.log("REGISTERING USER IN BACKEND");
     try {
-        const { firstName, lastName, email, password, passwordVerify } = req.body;
+        const { firstName, lastName, username, email, password, passwordVerify, avatar } = req.body;
         console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
-        if (!firstName || !lastName || !email || !password || !passwordVerify) {
-            return res
-                .status(400)
-                .json({ errorMessage: "Please enter all required fields." });
+        if (!username || !email || !password || !passwordVerify || !avatar) {
+            return res.status(400).json({ errorMessage: "Please enter all required fields." });
         }
+
         console.log("all fields provided");
         if (password.length < 8) {
-            return res
-                .status(400)
-                .json({
-                    errorMessage: "Please enter a password of at least 8 characters."
-                });
+            return res.status(400).json({ errorMessage: "Please enter a password of at least 8 characters." });
         }
+
         console.log("password long enough");
         if (password !== passwordVerify) {
-            return res
-                .status(400)
-                .json({
-                    errorMessage: "Please enter the same password twice."
-                })
+            return res.status(400).json({ errorMessage: "Please enter the same password twice." })
         }
+
         console.log("password and password verify match");
         const existingUser = await User.findOne({ email: email });
         console.log("existingUser: " + existingUser);
         if (existingUser) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    errorMessage: "An account with this email address already exists."
-                })
+            return res.status(400).json({ success: false, errorMessage: "An account with this email address already exists." })
         }
 
         const saltRounds = 10;
@@ -137,7 +122,15 @@ registerUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
         console.log("passwordHash: " + passwordHash);
 
-        const newUser = new User({firstName, lastName, email, passwordHash});
+        const newUser = new User({
+            firstName: firstName || "", 
+            lastName: lastName || "", 
+            username, 
+            email, 
+            passwordHash, 
+            avatar
+        });
+
         const savedUser = await newUser.save();
         console.log("new user saved: " + savedUser._id);
 
@@ -152,9 +145,11 @@ registerUser = async (req, res) => {
         }).status(200).json({
             success: true,
             user: {
+                username: savedUser.username,
                 firstName: savedUser.firstName,
                 lastName: savedUser.lastName,  
-                email: savedUser.email              
+                email: savedUser.email,
+                avatar: savedUser.avatar              
             }
         })
 
@@ -166,9 +161,63 @@ registerUser = async (req, res) => {
     }
 }
 
+updateAccount = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        const { username, avatar, currentPassword, newPassword, newPasswordVerify } = req.body;
+
+        const user = await User.findById(userId).exec();
+        if (!user) {
+            return res.status(400).json({ errorMessage: "User not found" });
+        }
+
+        if (username) user.username = username;
+        if(avatar) user.avatar = avatar;
+
+        if (newPassword || newPasswordVerify || currentPassword) {
+            if (!currentPassword || !newPassword || !newPasswordVerify) {
+                return res.status(400).json({ errorMessage: "Please provide current and new passwords." });
+            }
+
+            const currentValid = await bcrypt.compare(currentPassword, user.passwordHash);
+            if(!currentValid) {
+                return res.status(401).json({ errorMessage: "Current password is incorrect." });
+            }
+
+            if (newPassword.length < 8) {
+                return res.status(400).json({ errorMessage: "New password must be at least 8 characters." });
+            }
+
+            if (newPassword !== newPasswordVerify) {
+                return res.status(400).json({ errorMessage: "New passwords do not match." });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            user.passwordHash = await bcrypt.hash(newPassword, salt);
+        }
+
+        const savedUser = await user.save();
+        return res.status(200).json({
+            success: true,
+            user: {
+                username: savedUser.username,
+                firstName: savedUser.firstName,
+                lastName: savedUser.lastName,
+                email: savedUser.email,
+                avatar: savedUser.avatar
+            }
+        })
+    } catch (err) {
+        console.error("updateAccount error:", err);
+        res.status(500).send()
+    }
+}
+
 module.exports = {
     getLoggedIn,
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    updateAccount
 }
