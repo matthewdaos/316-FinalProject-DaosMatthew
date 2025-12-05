@@ -5,9 +5,9 @@ const auth = require('../auth')
 
 router.post('/playlist', auth.verify, StoreController.createPlaylist)
 router.delete('/playlist/:id', auth.verify, StoreController.deletePlaylist)
-router.get('/playlist/:id', auth.optionalVerify, StoreController.getPlaylistById)
+router.get('/playlist/:id', auth.guestVerify, StoreController.getPlaylistById)
 router.get('/playlistpairs', auth.verify, StoreController.getPlaylistPairs)
-router.get('/playlists', auth.optionalVerify, StoreController.getPlaylists)
+router.get('/playlists', auth.guestVerify, StoreController.getPlaylists)
 router.put('/playlist/:id', auth.verify, StoreController.updatePlaylist)
 
 module.exports = router
