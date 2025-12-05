@@ -30,6 +30,23 @@ function authManager() {
         }
     }
 
+    optionalVerify = (req, res, next) => {
+        try {
+            const token = req.cookies.token;
+            if(!token) {
+                req.userId = null;
+                return next();
+            }
+
+            const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+            req.userId = decodedToken.userId;
+            return next();
+        } catch(err) {
+            req.userId = null;
+            return next();
+        }
+    } 
+
     verifyUser = (req) => {
         try {
             const token = req.cookies.token;
