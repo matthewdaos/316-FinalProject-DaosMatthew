@@ -33,7 +33,7 @@ addSongToPlaylist = async (req, res) => {
 }
 
 createSong = async (req, res) => {
-    const userId = req.userId;
+    const ownerId = req.userId;
 
     const { title, artist, year, youTubeId } = req.body;
     if (!title || !artist || !year || !youTubeId) {
