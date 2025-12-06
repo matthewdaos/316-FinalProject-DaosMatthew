@@ -18,6 +18,7 @@ class DatabaseManager {
         await mongoose.connection.close();
     }
 
+    // USER 
     async createUser(userData) {
         const user = new User(userData);
         return user.save();
@@ -31,6 +32,7 @@ class DatabaseManager {
         return User.findById(id).exec();
     }
 
+    //PLAYLIST
     async copyPlaylist({ ownerId, sourcePlaylistId }) {
         const source = await Playlist.findById(sourcePlaylistId).exec();
         if(!source) {
@@ -241,6 +243,126 @@ class DatabaseManager {
         }
 
         return playlist.save();
+    }
+
+    // SONG
+    async addSongToPlaylist({ ownerId, songId, playlistId }) {
+        const [song, playlist] = await Promise.all([
+            Song.findById(songId).exec(),
+            Playlist.findById(playlistId).exec()
+        ]);
+        
+        if (!song || !playlist) {
+            return { ok: false, reason: 'song or playlist not found' }
+        }
+        
+        if (playlist.owner.toString() !== ownerId.toString()) {
+            return { ok: false, reason: 'not playlist owner' }
+
+        }
+        
+        if(!playlist.songs.includes(song._id)) {
+            playlist.songs.push(song._id);
+            await playlist.save();
+        }
+        
+        song.playlistCount += 1;
+        await song.save();
+
+        return playlist;
+    }
+
+    async createSong({ ownerId, title, artist, year, youTubeId }) {
+        const song = new Song({
+            title,
+            artist,
+            year,
+            youTubeId,
+            owner: ownerId
+        })
+
+        return song.save();
+    }
+
+    async deleteSong({ ownerId, songId }) {
+        const song = await Song.findById(songId);
+        if(!song) {
+            return { ok: false, reason: 'song not found' }
+        }
+         if(song.owner.toString() !== ownerId.toString()) {
+            return { ok: false, reason: 'not song owner' }
+        }
+        
+        await Playlist.updateMany(
+            { songs: song._id },
+            { $pull: { songs: song._id } }
+        );
+        
+        await Song.deleteOne({ _id: song._id }).exec();
+    }
+
+    async searchSong(filters) {
+        const { title, artist, year, scope, sortBy, sortDir, userId } = filters;
+
+        const filter = {};
+                
+        if (title && title.trim() !== '') {
+            filter.title = { $regex: title.trim(), $options: 'i' };
+        }
+        if (artist && artist.trim() !== '') {
+            filter.artist = { $regex: artist.trim(), $options: 'i' };
+        }
+        if(year && !isNaN(year)) {
+            filter.year = Number(year);
+        }
+        
+        if(userId && scope === 'mine') {
+            filter.owner = new mongoose.Types.ObjectId(userId);
+        }
+        
+        const dir = sortDir === 'asc' ? 1 : -1;
+        const sort = {};
+        
+        switch(sortBy) {
+            case 'listens':
+                sort.listens = dir;
+                break;
+            case 'playlists':
+                sort.playlistCount = dir;
+                break;
+            case 'title':
+                sort.title = dir;
+                break;
+            case 'artist':
+                sort.artist = dir;
+                break;
+            case 'year':
+                sort.year = dir;
+                break;
+            default: 
+                sort.listens = -1;
+            }
+        
+        return Song.find(filter).sort(sort).exec();
+    }
+
+    async updateSong({ ownerId, songId, data}) {
+        const song = await Song.findById(songId);
+        if(!song) {
+            return { ok: false, reason: 'song not found' }
+        }
+        if(song.owner.toString() !== ownerId.toString()) {
+            return { ok: false, reason: 'not song owner' }
+        }
+
+        const { title, artist, year, youTubeId } = data;
+
+        if(title !== undefined) song.title = title;
+        if(artist !== undefined) song.artist = artist;
+        if(year !== undefined) song.year = year;
+        if(youTubeId !== undefined) song.youTubeId = youTubeId;
+        
+        return song.save();
     }
 }
 
