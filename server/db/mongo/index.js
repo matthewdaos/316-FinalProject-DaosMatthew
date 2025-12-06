@@ -264,12 +264,12 @@ class DatabaseManager {
         if(!playlist.songs.includes(song._id)) {
             playlist.songs.push(song._id);
             await playlist.save();
-        }
-        
-        song.playlistCount += 1;
-        await song.save();
 
-        return playlist;
+            song.playlistCount += 1;
+            await song.save();
+        }
+
+        return { ok: true, playlist };
     }
 
     async createSong({ ownerId, title, artist, year, youTubeId }) {
@@ -299,6 +299,7 @@ class DatabaseManager {
         );
         
         await Song.deleteOne({ _id: song._id }).exec();
+        return { ok: true };
     }
 
     async searchSong(filters) {
@@ -362,7 +363,8 @@ class DatabaseManager {
         if(year !== undefined) song.year = year;
         if(youTubeId !== undefined) song.youTubeId = youTubeId;
         
-        return song.save();
+        const saved = await song.save();
+        return { ok: true, song: saved }
     }
 }
 
