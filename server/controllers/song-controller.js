@@ -1,35 +1,31 @@
-const Song = require('../models/song-model')
-const Playlist = require('../models/playlist-model')
+const dbManager = require('../db/mongo/index')
 
 addSongToPlaylist = async (req, res) => {
-    const userId = req.userId;
-
+    const ownerId = req.userId;
+    const songId = req.params.id;
     const { playlistId } = req.body;
+
     if(!playlistId) {
         return res.status(400).json({ success: false, errorMessage: 'playlistId required'});
     }
 
     try {
-        const [song, playlist] = await Promise.all([
-            Song.findById(req.params.id),
-            Playlist.findById(playlistId)
-        ]);
+        const result = await dbManager.addSongToPlaylist({
+            ownerId,
+            songId,
+            playlistId
+        });
 
-        if (!song || !playlist) {
-            return res.status(404).json({ success: false, errorMessage: 'Song or playlist not found'});
+        if(result.ok === false) {
+            if(result.reason === 'song or playlist not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Song or playlist not found'});
+            }
+            if(result.reason === 'not playlist owner') {
+                return res.status(403).json({ success: false, errorMessage: 'You do not own this playlist'});
+            }
         }
 
-        if (playlist.owner.toString() !== userId) {
-            return res.status(403).json({ success: false, errorMessage: "You do not own this playlist"});
-        }
-
-        playlist.songs.push(song._id);
-        await playlist.save();
-
-        song.playlistCount += 1;
-        await song.save();
-
-        return res.status(200).json({ success: true, playlist })
+        return res.status(200).json({ success: true, playlist: result.playlist })
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to add song to playlist'});
@@ -45,15 +41,13 @@ createSong = async (req, res) => {
     }
 
     try {
-        const song = new Song({
+        const song = await dbManager.createSong({
+            ownerId,
             title,
-            artist, 
+            artist,
             year,
-            youTubeId,
-            owner: userId
+            youTubeId
         })
-
-        await song.save();
         return res.status(201).json({ success: true, song });
     } catch(err) {
         if(err.code === 11000) {
@@ -65,23 +59,20 @@ createSong = async (req, res) => {
 }
 
 deleteSong = async (req, res) => {
-    const userId = req.userId;
+    const ownerId = req.userId;
+    const songId = req.params.id;
 
     try {
-        const song = await Song.findById(req.params.id);
-        if(!song) {
-            return res.status(404).json({ success: false, errorMessage: 'Song not found' });
-        }
-        if(song.owner.toString() !== userId) {
-            return res.status(403).json({ success: false, errorMessage: 'Only owner can remove song' });
-        }
+        const result = await dbManager.deleteSong({ ownerId, songId });
 
-        await Playlist.updateMany(
-            { songs: song._id },
-            { $pull: { songs: song._id } }
-        );
-
-        await Song.deleteOne({ _id: song._id });
+        if(result.ok === false) {
+            if(result.reason === 'song not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Song not found'});
+            }
+            if(result.reason === 'not song owner') {
+                return res.status(403).json({ success: false, errorMessage: 'Only owner can remove song'});
+            }
+        }
         return res.status(200).json({ success: true });
     } catch(err) {
         console.error(err);
@@ -95,46 +86,15 @@ searchSongs = async (req, res) => {
     const { title, artist, year, scope, sortBy, sortDir } = req.query;
 
     try {
-        const filter = {};
-        
-        if (title && title.trim() !== '') {
-            filter.title = { $regex: title.trim(), $options: 'i' };
-        }
-        if (artist && artist.trim() !== '') {
-            filter.artist = { $regex: artist.trim(), $options: 'i' };
-        }
-        if(year && !isNaN(year)) {
-            filter.year = Number(year);
-        }
-
-        if(userId && scope === 'mine') {
-            filter.owner = userId;
-        }
-
-        const dir = sortDir === 'asc' ? 1 : -1;
-        const sort = {};
-
-        switch(sortBy) {
-            case 'listens':
-                sort.listens = dir;
-                break;
-            case 'playlists':
-                sort.playlistCount = dir;
-                break;
-            case 'title':
-                sort.title = dir;
-                break;
-            case 'artist':
-                sort.artist = dir;
-                break;
-            case 'year':
-                sort.year = dir;
-                break;
-            default: 
-                sort.listens = -1;
-        }
-
-        const songs = await Song.find(filter).sort(sort);
+        const songs = await dbManager.searchSong({
+            title,
+            artist,
+            year,
+            scope,
+            sortBy,
+            sortDir,
+            userId
+        })
 
         return res.status(200).json({ success: true, songs });
     } catch(err) {
@@ -144,26 +104,22 @@ searchSongs = async (req, res) => {
 }
 
 updateSong = async(req, res) => {
-    const userId = req.userId;
-
-    const { title, artist, year, youTubeId } = req.body;
+    const ownerId = req.userId;
+    const songId = req.params.id;
+    const data = req.body;
 
     try {
-        const song = await Song.findById(req.params.id);
-        if(!song) {
-            return res.status(404).json({ success: false, errorMessage: 'Song not found' });
-        }
-        if(song.owner.toString() !== userId) {
-            return res.status(403).json({ success: false, errorMessage: 'Only owner can update song' });
-        }
+        const result = await dbManager.updateSong({ ownerId, songId, data });
 
-        if(title !== undefined) song.title = title;
-        if(artist !== undefined) song.artist = artist;
-        if(year !== undefined) song.year = year;
-        if(youTubeId !== undefined) song.youTubeId = youTubeId;
-
-        await song.save();
-        return res.status(200).json({ success: true, song });
+        if(result.ok === false) {
+            if(result.reason === 'song not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Song not found'});
+            }
+            if(result.reason === 'not song owner') {
+                return res.status(403).json({ success: false, errorMessage: 'Only owner can update song'});
+            }
+        }
+        return res.status(200).json({ success: true, song: result.song });
     } catch(err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to update song' });

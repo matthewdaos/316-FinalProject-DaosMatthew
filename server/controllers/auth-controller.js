@@ -1,5 +1,5 @@
 const auth = require('../auth')
-const User = require('../models/user-model')
+const dbManager = require('../db/mongo/index')
 const bcrypt = require('bcryptjs')
 
 getLoggedIn = async (req, res) => {
@@ -12,14 +12,14 @@ getLoggedIn = async (req, res) => {
             })
         }
 
-        const loggedInUser = await User.findById(userId).exec();
+        const loggedInUser = await dbManager.findUserById(userId);
         console.log("loggedInUser: " + loggedInUser);
 
         if(!loggedInUser) {
             return res.status(200).json({ loggedIn: false, user: null });
         }
         return res.status(200).json({
-            loggedIN: true,
+            loggedIn: true,
             user: {
                 username: loggedInUser.username,
                 firstName: loggedInUser.firstName,
@@ -31,7 +31,7 @@ getLoggedIn = async (req, res) => {
         })
     } catch (err) {
         console.log("err: " + err);
-        return res.status(500).json({ loggedIn: false, user: null });
+        return res.status(500).json({ loggedIn: false, user: null, errorMesssage: "Server error" });
     }
 }
 
@@ -44,7 +44,7 @@ loginUser = async (req, res) => {
             return res.status(400).json({ errorMessage: "Please enter all required fields." });
         }
 
-        const existingUser = await User.findOne({ email: email });
+        const existingUser = await dbManager.findUserByEmail(email);
         console.log("existingUser: " + existingUser);
         if (!existingUser) {
             return res.status(401).json({ errorMessage: "Wrong email or password provided." })
@@ -111,7 +111,8 @@ registerUser = async (req, res) => {
         }
 
         console.log("password and password verify match");
-        const existingUser = await User.findOne({ email: email });
+
+        const existingUser = await dbManager.findUserByEmail(email);
         console.log("existingUser: " + existingUser);
         if (existingUser) {
             return res.status(400).json({ success: false, errorMessage: "An account with this email address already exists." })
@@ -122,16 +123,14 @@ registerUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
         console.log("passwordHash: " + passwordHash);
 
-        const newUser = new User({
+        const savedUser = await dbManager.createUser({
             firstName: firstName || "", 
             lastName: lastName || "", 
-            username, 
-            email, 
-            passwordHash, 
+            username,
+            email,
+            passwordHash,
             avatar
-        });
-
-        const savedUser = await newUser.save();
+        })
         console.log("new user saved: " + savedUser._id);
 
         // LOGIN THE USER
@@ -167,7 +166,7 @@ updateAccount = async (req, res) => {
 
         const { username, avatar, currentPassword, newPassword, newPasswordVerify } = req.body;
 
-        const user = await User.findById(userId).exec();
+        const user = await dbManager.findUserById(userId);
         if (!user) {
             return res.status(400).json({ errorMessage: "User not found" });
         }

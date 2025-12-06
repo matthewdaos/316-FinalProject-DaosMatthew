@@ -1,42 +1,25 @@
-const Playlist = require('../models/playlist-model')
-const Song = require('../models/song-model')
-const User = require('../models/user-model')
+const dbManager = require('../db/mongo/index')
 
 copyPlaylist = async(req, res) => {
     const userId = req.userId;
+    const playlistId = req.params.id;
 
     try {
-        const source = await Playlist.findById(req.params.id);
-        if(!source) {
-            return res.status(404).json({ errorMessage: 'Playlist not found' });
+        const result = await dbManager.copyPlaylist({
+            ownerId: ownerId,
+            sourcePlaylistId: playlistId
+        });
+
+        if(result && result.ok === false) {
+            if(result.reason === 'user not found') {
+                return res.status(404).json({ success: false, errorMessage: 'User not found' });
+            }
+            if(result.reason === 'playlist not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Playlist not found' });
+            }
         }
 
-        const user = await User.findById(userId);
-        if(!user) {
-            return res.status(404).json({ errorMessage: 'User not found' });
-        }
-
-        let copyName = `Copy of ${source.name}`;
-        let name = copyName;
-        let suffix = 1;
-        while(await Playlist.findOne({ owner: userId, name})) {
-            name = `${copyName} (${suffix++})`;
-        }
-
-        const copy = new Playlist({ 
-            name, 
-            ownerEmail: user.email,
-            owner: user._id,
-            songs: [...source.songs]
-        })
-
-
-        await copy.save();
-
-        user.playlists.push(copy._id);
-        await user.save();
-
-        return res.status(201).json({ success: true, playlist: copy });
+        return res.status(201).json({ success: true, playlist: result });
     } catch(err) {
         console.log(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to copy playlist' });
@@ -47,36 +30,25 @@ createPlaylist = async (req, res) => {
 
     const { name, songs } = req.body;
     if (!name) {
-        return res.status(400).json({
-            success: false,
-            error: 'Playlist name is required',
-        })
+        return res.status(400).json({ success: false, error: 'Playlist name is required', })
     }
     
     try {
-        const user = await User.findById(userId);
-        if(!user) {
-            return res.status(404).json({ errorMessage: 'User not found' });
-        }
-
-        const existingUser = await Playlist.findOne({ owner: userId, name });
-        if(existingUser) {
-            return res.status(400).json({ success: false, errorMessage: 'Already have playlist of that name' })
-        }
-
-        const playlist = new Playlist({
+        const result = await dbManager.createPlaylist({
+            ownerId: userId,
             name, 
-            ownerEmail: user.email,
-            owner: user._id,
-            songs: songs || []
+            songs
         })
 
-        await playlist.save();
-
-        user.playlists.push(playlist._id);
-        await user.save();
-
-        return res.status(201).json({ success: true, playlist });
+        if(result && result.ok === false) {
+            if(result.reason === 'user not found') {
+                return res.status(404).json({ success: false, errorMessage: 'User not found' });
+            }
+            if(result.reason === 'playlist name conflict') {
+                return res.status(400).json({ success: false, errorMessage: 'Already have playlist of that name' });
+            }
+        }
+        return res.status(201).json({ success: true, playlist: result });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to create playlist' });
@@ -84,22 +56,22 @@ createPlaylist = async (req, res) => {
 }
 deletePlaylist = async (req, res) => {
     const userId = req.userId;
+    const playlistId = req.params.id;
 
     try {
-        const playlist = await Playlist.findById(req.params.id);
-        if(!playlist) {
-            return res.status(404).json({ errorMessage: 'Playlist not found' });
-        }
-        if(playlist.owner.toString() !== userId) {
-            return res.status(403).json({ errorMessage: 'authentication error' })
-        }
+        const result = await dbManager.deletePlaylist({
+            ownerId: userId,
+            playlistId
+        })
 
-        await Playlist.deleteOne({ _id: playlist._id });
-
-        await User.updateOne(
-            { _id: userId },
-            { $pull: { playlists: playlist._id } }
-        );
+        if(result && result.ok === false) {
+            if(result.reason === 'playlist not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Playlist not found' });
+            }
+            if(result.reason === 'not playlist owner') {
+                return res.status(403).json({ success: false, errorMessage: 'authentication error' });
+            }
+        }
 
         return res.status(200).json({ success: true });
     } catch(err) {
@@ -108,15 +80,22 @@ deletePlaylist = async (req, res) => {
     }
 }
 getPlaylistById = async (req, res) => {
+    const userId = req.userId;
+    const playlistId = req.params.id;
+
     try {
-        const list = await Playlist.findById({ _id: req.params.id }).exec();
-        if(!list) {
-            return res.status(404).json({ success: false, error: 'Playlist not found '});
+        const playlist = await dbManager.getPlaylistById(playlistId);
+        if(!playlist) {
+            return res.status(404).json({ success: false, error: 'Playlist not found', })
         }
 
-        return res.status(200).json({ success: true, playlist: list });
+        if(playlist.owner.toString() !== userId.toString()) {
+            return res.status(403).json({ success: false, error: 'authentication error' })
+        }
+
+        return res.status(200).json({ success: true, playlist });
     } catch (err) {
-        console.error("getPlaylistById error:", err);
+        console.error(err);
         return res.status(400).json({ success: false, error: err });
     }
 }
@@ -124,52 +103,27 @@ getPlaylistPairs = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const user = await User.findById(userId).exec();
-        if(!user) {
-            return res.status(400).json({ success: false, error: "User not found" });
-        }
-
-        const email = user.email;
-        const playlists = await Playlist.find({ ownerEmail: email }).exec();
-
-        if(!playlists || playlists.length === 0) {
-            return res.status(400).json({ success: false, error: 'Playlists not found' });
-        }
-
-        const pairs = playlists.map(list => ({
-            _id: list._id,
-            name: list.name
-        }));
+        const pairs = await dbManager.getUserPlaylistPairs(userId);
 
         return res.status(200).json({ success: true, idNamePairs: pairs });
     } catch(err) {
-        console.error("getPlaylistPairs error:", err);
+        console.error(err);
         return res.status(400).json({ success: false, error: err });
     }
 }
 
 playPlaylist = async(req, res) => {
-    const userId = req.userId;
+    const listenerId = req.userId || null;
+    const playlistId = req.params.id;
 
     try {
-        const playlist = await Playlist.findById(req.params.id);
-        if(!playlist) {
-            return res.status(404).json({ errorMessage: 'Playlist not found' });
+        const result = await dbManager.playPlaylist({ listenerId, playlistId });
+        if(result && result.ok === false) {
+            if(result.reason === 'playlist not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Playlist not found' });
+            }
         }
-
-        const listenKey = userId || 'guest';
-        if(!playlist.listenedBy.includes(listenKey)) {
-            playlist.listenedBy.push(listenKey);
-            playlist.differentListeners = playlist.listenedBy.length;
-        }
-
-        await Song.updateMany(
-            { _id: { $in: playlist.songs } },
-            { $inc: { listens: 1 } }
-        )
-
-        await playlist.save();
-        return res.status(200).json({ success: true, playlist });
+        return res.status(200).json({ success: true, playlist: result });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to register play' });
@@ -179,81 +133,19 @@ playPlaylist = async(req, res) => {
 searchPlaylists = async (req, res) => {
     const userId = req.userId;
 
-    const { name, userName, songTitle, songArtist, songYear, scope, sortBy, sortDir } = req.query;
-
     try {
-        const match = {};
-
-        if (userId && scope === 'mine') {
-            match.owner = userId;
-        }
-
-        if (name && name.trim() !== '') {
-            match.name = { $regex: name.trim(), $options: 'i' };
-        }
-
-        const pipeline = [
-            { $match: match },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'owner',
-                    foreignField: '_id',
-                    as: 'ownerDoc'
-                }
-            },
-            { $unwind: '$ownerDoc'},
-            {
-                $lookup: {
-                    from: 'songs',
-                    localField: 'songs',
-                    foreignField: '_id',
-                    as: 'songDocs'
-                }
-            }
-        ];
-
-        if (userName && userName.trim() !== '') {
-            pipeline.push({
-                $match: {
-                    'ownerDoc.firstName': { $exists: true },
-                    $or: [
-                        { 'ownerDoc.firstName': { $regex: userName.trim(), $options: 'i' } },
-                        { 'ownerDoc.lastName': { $regex: userName.trim(), $options: 'i' } }
-                    ]
-                }
-            })
-        }
-
-        const songMatch = {};
-        if(songTitle && songTitle.trim() !== '') {
-            songMatch['songDocs.title'] = { $regex: songTitle.trim(), $options: 'i' }
-        }
-        if(songArtist && songArtist.trim() !== '') {
-            songMatch['songDocs.artist'] = { $regex: songArtist.trim(), $options: 'i' }
-        }
-        if(songYear && !isNaN(songYear)) {
-            songMatch['songDocs.year'] = Number(songYear)
-        }
-        if(Object.keys(songMatch).length > 0) {
-            pipeline.push({ $match: songMatch })
-        }
-
-        const dir = sortDir === 'asc' ? 1 : -1;
-        let sortStage = {};
-        if (sortBy === 'playlistName') {
-            sortStage = { name: dir };
-        } else if (sortBy === 'userName') {
-            sortStage = { 'ownerDoc.lastName': dir, 'ownerDoc.firstName': dir }; 
-        } else if (sortBy === 'listeners') {
-            sortStage = { differentListeners: dir };
-        } else {
-            sortStage = { differentListeners: -1 }
-        }
-        pipeline.push({ $sort: sortStage });
-
-        const results = await Playlist.aggregate(pipeline);
-        return res.status(200).json({ success: true, playlists: results });
+        const playlists = await dbManager.searchPlaylist({
+            userId,
+            name: req.query.name,
+            userName: req.query.userName,
+            songTitle: req.query.songTitle,
+            songArtist: req.query.songArtist,
+            songYear: req.query.songYear,
+            scope: req.query.scope,
+            sortBy: req.query.sortBy,
+            sortDir: req.query.sortDir
+        });
+        return res.status(200).json({ success: true, playlists });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to search playlists' });
@@ -261,39 +153,28 @@ searchPlaylists = async (req, res) => {
 }
 updatePlaylist = async (req, res) => {
     const userId = req.userId;
-
-    const body = req.body;
-    if(!body) {
-        return res.status(400).json({ success: false, error: 'Provide a body to update' });
-    }
+    const playlistId = req.params.id;
+    const { name, songs } = req.body;
 
     try {
-        const playlist = await Playlist.findById(req.params.id);
-        if(!playlist) {
-            return res.status(404).json({ errorMessage: 'Playlist not found' })
-        }
-
-        if(playlist.owner.toString() !== userId) {
-            return res.status(403).json({ success: false, errorMessage: 'authentication error' });
-        }
-
-        if(body.name && body.name !== playlist.name) {
-            const existingPlaylist = await Playlist.findOne({
-                owner: userId,
-                name: body.name
-            })
-            if(existingPlaylist) {
-                return res.status(400).json({ success: false, errorMessage: 'Already have a playlist of that name' })
+        const result = await dbManager.updatePlaylist({
+            ownerId: ownerId,
+            playlistId,
+            name, 
+            songs
+        })
+        if(result && result.ok === false) {
+            if(result.reason === 'playlist not found') {
+                return res.status(404).json({ success: false, errorMessage: 'Playlist not found' });
             }
-
-            playlist.name = body.name;
+            if(result.reason === 'not playlist owner') {
+                return res.status(403).json({ success: false, errorMessage: 'authentication error' });
+            }
+            if(result.reason === 'playlist name conflict') {
+                return res.status(400).json({ success: false, errorMessage: 'Already have playlist of that name' });
+            }
         }
-
-        if(Array.isArray(body.songs)) {
-            playlist.songs = body.songs;
-        }
-        await playlist.save();
-        return res.status(200).json({ success: true, playlist })
+        return res.status(200).json({ success: true, playlist: result })
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Playlist not updated' });
