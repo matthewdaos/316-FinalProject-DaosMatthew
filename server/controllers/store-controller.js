@@ -1,6 +1,6 @@
 const Playlist = require('../models/playlist-model')
 const Song = require('../models/song-model')
-const User = require('../models/user-model');
+const User = require('../models/user-model')
 
 copyPlaylist = async(req, res) => {
     const userId = req.userId;
@@ -147,19 +147,6 @@ getPlaylistPairs = async (req, res) => {
         return res.status(400).json({ success: false, error: err });
     }
 }
-getPlaylists = async (req, res) => {
-    try {
-        const playlists = await Playlist.find({}).exec();
-        if(!playlists || playlists.length === 0) {
-            return res.status(404).json({ success: false, error: 'Playlists not found '});
-        }
-
-        return res.status(200).json({ success: true, data: playlists });
-    } catch (err) {
-        console.error("getPlaylists error:", err);
-        return res.status(400).json({ success: false, error: err });
-    }
-}
 
 playPlaylist = async(req, res) => {
     const userId = req.userId;
@@ -186,6 +173,90 @@ playPlaylist = async(req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Failed to register play' });
+    }
+}
+
+searchPlaylists = async (req, res) => {
+    const userId = req.userId;
+
+    const { name, userName, songTitle, songArtist, songYear, scope, sortBy, sortDir } = req.query;
+
+    try {
+        const match = {};
+
+        if (userId && scope === 'mine') {
+            match.owner = userId;
+        }
+
+        if (name && name.trim() !== '') {
+            match.name = { $regex: name.trim(), $options: 'i' };
+        }
+
+        const pipeline = [
+            { $match: match },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'owner',
+                    foreignField: '_id',
+                    as: 'ownerDoc'
+                }
+            },
+            { $unwind: '$ownerDoc'},
+            {
+                $lookup: {
+                    from: 'songs',
+                    localField: 'songs',
+                    foreignField: '_id',
+                    as: 'songDocs'
+                }
+            }
+        ];
+
+        if (userName && userName.trim() !== '') {
+            pipeline.push({
+                $match: {
+                    'ownerDoc.firstName': { $exists: true },
+                    $or: [
+                        { 'ownerDoc.firstName': { $regex: userName.trim(), $options: 'i' } },
+                        { 'ownerDoc.lastName': { $regex: userName.trim(), $options: 'i' } }
+                    ]
+                }
+            })
+        }
+
+        const songMatch = {};
+        if(songTitle && songTitle.trim() !== '') {
+            songMatch['songDocs.title'] = { $regex: songTitle.trim(), $options: 'i' }
+        }
+        if(songArtist && songArtist.trim() !== '') {
+            songMatch['songDocs.artist'] = { $regex: songArtist.trim(), $options: 'i' }
+        }
+        if(songYear && !isNaN(songYear)) {
+            songMatch['songDocs.year'] = Number(songYear)
+        }
+        if(Object.keys(songMatch).length > 0) {
+            pipeline.push({ $match: songMatch })
+        }
+
+        const dir = sortDir === 'asc' ? 1 : -1;
+        let sortStage = {};
+        if (sortBy === 'playlistName') {
+            sortStage = { name: dir };
+        } else if (sortBy === 'userName') {
+            sortStage = { 'ownerDoc.lastName': dir, 'ownerDoc.firstName': dir }; 
+        } else if (sortBy === 'listeners') {
+            sortStage = { differentListeners: dir };
+        } else {
+            sortStage = { differentListeners: -1 }
+        }
+        pipeline.push({ $sort: sortStage });
+
+        const results = await Playlist.aggregate(pipeline);
+        return res.status(200).json({ success: true, playlists: results });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, errorMessage: 'Failed to search playlists' });
     }
 }
 updatePlaylist = async (req, res) => {
@@ -234,7 +305,7 @@ module.exports = {
     deletePlaylist,
     getPlaylistById,
     getPlaylistPairs,
-    getPlaylists,
     playPlaylist,
+    searchPlaylists,
     updatePlaylist
 }
