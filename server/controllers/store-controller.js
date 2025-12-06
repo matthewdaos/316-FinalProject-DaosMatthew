@@ -1,13 +1,12 @@
 const Playlist = require('../models/playlist-model')
 const Song = require('../models/song-model')
 const User = require('../models/user-model');
-const auth = require('../auth')
 
 copyPlaylist = async(req, res) => {
     const userId = req.userId;
 
     try {
-        const source = await Playlist.findById(req.params.id).populate('owner');
+        const source = await Playlist.findById(req.params.id);
         if(!source) {
             return res.status(404).json({ errorMessage: 'Playlist not found' });
         }
@@ -33,6 +32,8 @@ copyPlaylist = async(req, res) => {
 
 
         await copy.save();
+
+        user.playlists.push(copy._id);
         await user.save();
 
         return res.status(201).json({ success: true, playlist: copy });
@@ -45,7 +46,6 @@ createPlaylist = async (req, res) => {
     const userId = req.userId;
 
     const { name, songs } = req.body;
-    console.log("createPlaylist body: " + JSON.stringify(body));
     if (!name) {
         return res.status(400).json({
             success: false,
@@ -72,6 +72,8 @@ createPlaylist = async (req, res) => {
         })
 
         await playlist.save();
+
+        user.playlists.push(playlist._id);
         await user.save();
 
         return res.status(201).json({ success: true, playlist });
@@ -84,11 +86,11 @@ deletePlaylist = async (req, res) => {
     const userId = req.userId;
 
     try {
-        const playlist = await Playlist.findById(req.params.id).populate('owner');
+        const playlist = await Playlist.findById(req.params.id);
         if(!playlist) {
             return res.status(404).json({ errorMessage: 'Playlist not found' });
         }
-        if(playlist,owner.toString() !== userId) {
+        if(playlist.owner.toString() !== userId) {
             return res.status(403).json({ errorMessage: 'authentication error' })
         }
 
@@ -209,7 +211,7 @@ updatePlaylist = async (req, res) => {
                 owner: userId,
                 name: body.name
             })
-            if(existing) {
+            if(existingPlaylist) {
                 return res.status(400).json({ success: false, errorMessage: 'Already have a playlist of that name' })
             }
 
