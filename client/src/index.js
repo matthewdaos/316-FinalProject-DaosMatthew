@@ -2,6 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { AuthContextProvider } from "./auth";          
+import { GlobalStoreContextProvider } from "./store"; 
+
 /*
   This is the entry-point for our application. Notice that we
   inject our store into all the components in our application.
@@ -11,7 +14,11 @@ import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
   <React.StrictMode>  
-      <App />
+      <AuthContextProvider>
+        <GlobalStoreContextProvider>
+          <App />
+      </GlobalStoreContextProvider>
+    </AuthContextProvider>
   </React.StrictMode>,
   document.getElementById('root')
 );
