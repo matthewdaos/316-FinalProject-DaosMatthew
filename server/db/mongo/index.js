@@ -49,7 +49,8 @@ class DatabaseManager {
         let suffix = 1;
 
         while(await Playlist.findOne({ owner: ownerId, name}).exec()) {
-            name = `${copyName} (${suffix++})`;
+            name = `${copyName} (${suffix})`;
+            suffix++;
         }
         
         const copy = new Playlist({ 
@@ -67,6 +68,7 @@ class DatabaseManager {
 
         return savedCopy;
     }
+
 
     async createPlaylist({ ownerId, name, songs }) {
         const user = await this.findUserById(ownerId);
