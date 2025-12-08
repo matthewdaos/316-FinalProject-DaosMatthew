@@ -85,40 +85,40 @@ function AuthContextProvider(props) {
     auth.registerUser = async function(username, email, password, passwordVerify, avatarFile) {
         console.log("REGISTERING USER");
         try{   
-            const formData = new FormData();
-            formData.append("username", username);
-            formData.append("email", email);
-            formData.append("password", password);
-            formData.append("passwordVerify", passwordVerify);
-            if (avatarFile) {
-                formData.append("avatar", avatarFile);
-            }
-
-            const response = await authRequestSender.registerUser(formData);   
+            const response = await authRequestSender.registerUser(
+                username,
+                email,
+                password,
+                passwordVerify,
+                avatarFile
+            );   
             if (response.status === 200) {
-                console.log("Registered Sucessfully");
                 authReducer({
                     type: AuthActionType.REGISTER_USER,
                     payload: {
-                        user: response.data.user,
-                        loggedIn: true,
+                        user: null,
+                        loggedIn: false,
                         errorMessage: null
                     }
                 })
-                history.push("/login");
-                console.log("NOW WE LOGIN");
-                auth.loginUser(email, password);
-                console.log("LOGGED IN");
+                return { ok: true };
             }
         } catch(error){
+            const msg =
+                error?.response?.data?.errorMessage ||
+                error?.message ||
+                "Failed to register account.";
+
             authReducer({
                 type: AuthActionType.REGISTER_USER,
                 payload: {
-                    user: auth.user,
+                    user: null,
                     loggedIn: false,
-                    errorMessage: error.response.data.errorMessage
+                    errorMessage: msg
                 }
-            })
+            });
+
+            return { ok: false };
         }
     }
 
@@ -134,17 +134,24 @@ function AuthContextProvider(props) {
                         errorMessage: null
                     }
                 })
-                history.push("/playlists");
+                return { ok: true };
             }
         } catch(error){
+            const msg =
+            error?.response?.data?.errorMessage ||
+            error?.message ||
+            "Failed to log in.";
+
             authReducer({
                 type: AuthActionType.LOGIN_USER,
                 payload: {
-                    user: auth.user,
+                    user: null,
                     loggedIn: false,
-                    errorMessage: error.response.data.errorMessage
-                }
-            })
+                    errorMessage: msg,
+                },
+            });
+
+            return { ok: false };
         }
     }
 
@@ -155,8 +162,9 @@ function AuthContextProvider(props) {
                 type: AuthActionType.LOGOUT_USER,
                 payload: null
             })
-            history.push("/")
+            return { ok: true };
         }
+        return { ok: false };
     }
 
     auth.getUser = async function () {

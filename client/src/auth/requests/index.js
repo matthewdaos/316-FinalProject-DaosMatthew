@@ -31,13 +31,17 @@ export const loginUser = (email, password) => {
     })
 }
 export const logoutUser = () => api.get(`/logout/`)
-export const registerUser = (formData) => {
-    return api.post(`/register/`, formData, {
-        headers: {
-            "Content-Type": "multipart/form-data"
-        }
-    })
-}
+export const registerUser = (username, email, password, passwordVerify, avatarFile) => {
+    const avatar = avatarFile ? avatarFile.name : "";
+
+    return api.post(`/register/`, {
+        username,
+        email,
+        password,
+        passwordVerify,
+        avatar
+    });
+};
 
 export const updateUser = (formData) => {
     return api.put(`/update`, formData, {
