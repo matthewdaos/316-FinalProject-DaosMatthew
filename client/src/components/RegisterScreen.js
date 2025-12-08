@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import AuthContext from '../auth';
 
 import Avatar from '@mui/material/Avatar';
@@ -11,6 +12,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 export default function RegisterScreen() {
     const { auth } = useContext(AuthContext);
+    const history = useHistory();
 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -20,7 +22,7 @@ export default function RegisterScreen() {
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
 
-    const valid = username.trim().length > 0 && email.includes("@") && password.length >= 8 && password === confirm && avatarFile !== null;
+    const valid = username.trim().length > 0 && email.includes("@") && password.length >= 8 && password === confirm && avatarFile != null;
 
     function handleAvatarUpload(e) {
         const file = e.target.files[0];
@@ -30,16 +32,23 @@ export default function RegisterScreen() {
     }
 
     async function handleSubmit() {
-        auth.registerUser(username, email, password, confirm, avatarFile);
+        console.log("Create Account clicked");
+        if(!valid) return;
+        const result = await auth.registerUser(username, email, password, confirm, avatarFile);
+
+        if (result && result.ok) {
+            history.push("/login");
+        }
     }
 
+    console.log({ username, email, password, confirm, valid });
     return (
         <Box sx={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             height: "90vh",
-            backgroundColor: "#fdeaff"
+            backgroundColor: "#C6DBEF"
         }}>
             <Card sx={{
                 padding: 5,
@@ -48,7 +57,7 @@ export default function RegisterScreen() {
                 textAlign: "center"
             }}>
                 <LockOutlinedIcon sx={{ fontSize: 40, mb: 1 }}/>
-                
+
                 <Typography variant="h4" sx={{ mb: 3 }}>
                     Create Account
                 </Typography>

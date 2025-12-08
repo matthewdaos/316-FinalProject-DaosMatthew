@@ -59,7 +59,7 @@ export default function EditAccountScreen() {
                 justifyContent: "center",
                 alignItems: "center",
                 height: "90vh",
-                backgroundColor: "#fdeaff"
+                backgroundColor: "#C6DBEF"
         }}>
             <Card 
                 sx={{

@@ -17,7 +17,10 @@ export default function LoginScreen() {
     const [password, setPassword] = useState("");
 
     async function handleLogin() {
-        auth.loginUser(email, password);
+        const result = await auth.loginUser(email, password);
+        if (result && result.ok) {
+            history.push("/playlists")
+        }
     }
 
     return (
@@ -26,7 +29,7 @@ export default function LoginScreen() {
             justifyContent: "center",
             alignItems: "center",
             height: "90vh",
-            backgroundColor: "#fdeaff"
+            backgroundColor: "#C6DBEF"
         }}>
             <Card sx={{ padding: 5, minWidth: 400, backgroundColor: "#fff6d5" }}>
                 <LockOutlinedIcon sx={{ fontSize: 40, mb: 1 }}/>

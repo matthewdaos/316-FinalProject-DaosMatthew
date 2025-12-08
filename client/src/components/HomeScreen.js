@@ -15,7 +15,7 @@ export default function HomeScreen() {
             justifyContent: "center",
             alignItems: "center",
             height: "90vh",
-            backgroundColor: "#fdeaff"
+            backgroundColor: "#C6DBEF"
         }}>
             <Card sx={{
                 width: "70%",
