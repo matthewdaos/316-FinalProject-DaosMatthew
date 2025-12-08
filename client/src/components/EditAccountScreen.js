@@ -1,12 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react'
-import Avatar from '@mui/material/Avatar';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import { useHistory } from 'react-router-dom';
-import AuthContext from '../auth';
+import React, { useContext, useEffect, useState } from "react";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { useHistory } from "react-router-dom";
+import AuthContext from "../auth";
 
 export default function EditAccountScreen() {
     const { auth } = useContext(AuthContext);
@@ -21,27 +21,36 @@ export default function EditAccountScreen() {
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
 
+    // For convenience in JSX
+    const user = auth.user || {};
+
     useEffect(() => {
-        if(!auth.loggedIn || !auth.user) {
+        if (!auth.loggedIn || !auth.user) {
             history.push("/login");
             return;
         }
 
-        const user = auth.user;
         setUsername(user.username || "");
         setEmail(user.email || "");
-        setAvatarPreview(user.avatar || null);
 
+        // use whatever field you’re storing for avatar (avatar, avatarUrl, etc.)
+        setAvatarPreview(user.avatarUrl || user.avatar || null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.loggedIn, auth.user]);
 
-    const passwordFieldsFilled =
-        newPassword.length > 0 ||
-        newConfirm.length > 0;
+    // Clean up object URL when component unmounts or avatarPreview changes
+    useEffect(() => {
+        return () => {
+            if (avatarPreview && avatarPreview.startsWith("blob:")) {
+                URL.revokeObjectURL(avatarPreview);
+            }
+        };
+    }, [avatarPreview]);
 
-    let valid =
-        username.trim().length > 0 &&
-        email.includes("@");
+    const passwordFieldsFilled =
+        newPassword.length > 0 || newConfirm.length > 0;
+
+    let valid = username.trim().length > 0 && email.includes("@");
 
     if (passwordFieldsFilled) {
         valid =
@@ -52,16 +61,39 @@ export default function EditAccountScreen() {
 
     function handleAvatarUpload(e) {
         const file = e.target.files[0];
-        if(!file) return;
-        setAvatarFile(file);
-        setAvatarPreview(URL.createObjectURL(file));
+        if (!file) return;
+
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = () => {
+            // enforce 250x250 max dimensions
+            if (img.width > 250 || img.height > 250) {
+                alert("Avatar image must be at most 250x250 pixels.");
+                URL.revokeObjectURL(objectUrl);
+                return;
+            }
+
+            // OK to use this preview
+            setAvatarPreview(objectUrl);
+            setAvatarFile(file);
+        };
+
+        img.src = objectUrl;
     }
 
     async function handleSubmit() {
-        if(!valid) return;
+        if (!valid) return;
 
-        const result = await auth.updateUser(username, newPassword, newConfirm, avatarFile);
-        if(result && result.ok) {
+        // auth.updateUser should accept avatarFile on backend side
+        const result = await auth.updateUser(
+            username,
+            newPassword,
+            newConfirm,
+            avatarFile
+        );
+
+        if (result && result.ok) {
             setNewPassword("");
             setNewConfirm("");
             history.push("/playlists");
@@ -72,27 +104,32 @@ export default function EditAccountScreen() {
         history.push("/playlists");
     }
 
+    const avatarLetter =
+        (user.username && user.username[0].toUpperCase()) || "?";
+
     return (
-        <Box 
+        <Box
             sx={{
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
                 height: "90vh",
-                backgroundColor: "#C6DBEF"
-        }}>
-            <Card 
+                backgroundColor: "#C6DBEF",
+            }}
+        >
+            <Card
                 sx={{
                     padding: 5,
                     minWidth: 420,
                     backgroundColor: "#fff6d5",
-                    textAlign: "center"
-            }}>
+                    textAlign: "center",
+                }}
+            >
                 <Typography variant="h4" sx={{ mb: 3 }}>
                     Edit Account
                 </Typography>
 
-                <input 
+                <input
                     type="file"
                     accept="image/*"
                     id="avatarEdit"
@@ -100,63 +137,66 @@ export default function EditAccountScreen() {
                     onChange={handleAvatarUpload}
                 />
 
-                <label htmlFor="avatarEdit">
-                    <Avatar 
-                        src={avatarPreview}
-                        sx={{
-                            width: 80,
-                            height: 80,
-                            margin: "0 auto 20px",
-                            cursor: "pointer",
-                            border: "2px solid black"
-                        }}
-                    />
+                <label htmlFor="avatarEdit" style={{ cursor: "pointer" }}>
+                    <Avatar
+                        src={avatarPreview || undefined}
+                        sx={{ width: 56, height: 56, mx: "auto", mb: 2 }}
+                    >
+                        {avatarLetter}
+                    </Avatar>
                 </label>
 
-                <TextField 
+                <TextField
                     label="User Name"
-                    fullWidth 
+                    fullWidth
                     sx={{ mb: 2 }}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                 />
 
-                <TextField 
+                <TextField
                     label="Email"
-                    fullWidth sx={{ mb: 2 }}
+                    fullWidth
+                    sx={{ mb: 2 }}
                     value={email}
                     InputProps={{ readOnly: true }}
                 />
 
-                <TextField 
+                <TextField
                     label="Password"
                     type="password"
-                    fullWidth 
+                    fullWidth
                     sx={{ mb: 2 }}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                 />
 
-                <TextField 
+                <TextField
                     label="Password Confirm"
                     type="password"
-                    fullWidth 
+                    fullWidth
                     sx={{ mb: 3 }}
                     value={newConfirm}
                     onChange={(e) => setNewConfirm(e.target.value)}
                 />
 
-                <Button 
+                <Button
                     variant="contained"
                     fullWidth
                     disabled={!valid}
                     onClick={handleSubmit}
-                >Complete</Button>
+                >
+                    Complete
+                </Button>
 
-                <Button fullWidth sx={{ mt: 2 }} onClick={handleCancel}>
+                <Button
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={handleCancel}
+                >
                     Cancel
                 </Button>
             </Card>
         </Box>
-    )
+    );
 }
