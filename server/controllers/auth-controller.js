@@ -93,25 +93,21 @@ registerUser = async (req, res) => {
 
     try {
         const { username, email, password, passwordVerify, avatar } = req.body;
-
         if (!username || !email || !password || !passwordVerify) {
             return res.status(400).json({ errorMessage: "Please enter all required fields." });
         }
 
         console.log("all fields provided");
-
         if (password.length < 8) {
             return res.status(400).json({ errorMessage: "Please enter a password of at least 8 characters." });
         }
 
         console.log("password long enough");
-
         if (password !== passwordVerify) {
             return res.status(400).json({ errorMessage: "Please enter the same password twice." });
         }
 
         console.log("password and password verify match");
-
         const existingUser = await dbManager.findUserByEmail(email);
         console.log("existingUser:", existingUser);
         if (existingUser) {
