@@ -43,7 +43,7 @@ export const updatePlaylistById = (id, playlist) => {
 }
 
 export const createSong = ({ title, artist, year, youTubeId }) => {
-    return api.post(`/songs`, {   
+    return api.post(`/song`, {
         title,
         artist,
         year,
@@ -51,10 +51,18 @@ export const createSong = ({ title, artist, year, youTubeId }) => {
     });
 };
 
-export const getSongCatalog = () => api.get(`/songs`);
+export const getSongCatalog = () => api.get(`/song`);
 
 export const updateSong = (id, data) => {
-    return api.put(`/songs/${id}`, data);
+    return api.put(`/song/${id}`, data);
+};
+
+export const addSongToPlaylist = (songId, playlistId) => {
+    return api.post(`/song/${songId}/add-to-playlist`, { playlistId });
+};
+
+export const deleteSong = (id) => {
+    return api.delete(`/song/${id}`);
 };
 
 const apis = {
@@ -67,7 +75,9 @@ const apis = {
 
     createSong,
     getSongCatalog,
-    updateSong
+    updateSong,
+    addSongToPlaylist,
+    deleteSong
 }
 
 export default apis
