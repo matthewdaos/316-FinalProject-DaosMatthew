@@ -1,5 +1,4 @@
 import React, { createContext, useEffect, useState } from "react";
-import { useHistory } from 'react-router-dom'
 import authRequestSender from './requests'
 
 const AuthContext = createContext();
@@ -19,8 +18,6 @@ function AuthContextProvider(props) {
         loggedIn: false,
         errorMessage: null
     });
-    const history = useHistory();
-
     useEffect(() => {
         auth.getLoggedIn();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,55 +164,42 @@ function AuthContextProvider(props) {
         return { ok: false };
     }
 
-    auth.getUser = async function () {
-        const response = await authRequestSender.getUser()
-        if (response.status === 200 && response.data.success) {
-            authReducer({
-                type: AuthActionType.GET_LOGGED_IN,
-                payload: {
-                    loggedIn: true,
-                    user: response.data.user,
-                }
-            })
-            return response.data.user
-        }
-        return null
-    }
-
-    auth.updateUser = async function (username, password, passwordConfirm, avatarFile) {
+    auth.updateUser = async function (username, newPassword, newPasswordConfirm, avatarFile) {
         try {
-            const formData = new FormData();
-            formData.append("username", username);
-            if (password) {
-                formData.append("password", password);
-                formData.append("passwordConfirm", passwordConfirm);
-            }
-            if (avatarFile) {
-                formData.append("avatar", avatarFile);
-            }
-
-            const response = await authRequestSender.updateUser(formData);
+            const response = await authRequestSender.updateUser(
+                username, 
+                newPassword,
+                newPasswordConfirm,
+                avatarFile
+            );
             if (response.status === 200 && response.data.success) {
                 authReducer({
-                    type: AuthActionType.UPDATE_USER,
+                    type: AuthActionType.LOGIN_USER,
                     payload: {
                         user: response.data.user,
                         loggedIn: true,
                         errorMessage: null,
                     },
                 });
-                history.push("/playlists");
+                return { ok: true };
             }
+            return { ok: false }
         } catch (error) {
-            console.error("updateUser error:", error);
+            const msg =
+                error?.response?.data?.errorMessage ||
+                error?.message ||
+                "Failed to update your account.";
+
             authReducer({
-                type: AuthActionType.UPDATE_USER,
+                type: AuthActionType.LOGIN_USER,
                 payload: {
                     user: auth.user,
                     loggedIn: true,
-                    errorMessage: error?.response?.data?.errorMessage || "Update failed",
-                },
+                    errorMessage: msg
+                }
             });
+
+            return { ok: false };
         }
     };
 

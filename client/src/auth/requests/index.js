@@ -43,23 +43,23 @@ export const registerUser = (username, email, password, passwordVerify, avatarFi
     });
 };
 
-export const updateUser = (formData) => {
-    return api.put(`/update`, formData, {
-        headers: {
-            "Content-Type": "multipart/form-data"
-        }
-    })
-}
+export const updateUser = (username, newPassword, newPasswordVerify, avatarFile) => {
+    const avatar = avatarFile ? avatarFile.name : "";
 
-export const getUser = () => api.get(`/user`)
+    return api.put(`/account/`, {
+        username,
+        newPassword,
+        newPasswordVerify,
+        avatar
+    });
+}
 
 const apis = {
     getLoggedIn,
     registerUser,
     loginUser,
     logoutUser,
-    updateUser,
-    getUser
+    updateUser
 }
 
 export default apis
