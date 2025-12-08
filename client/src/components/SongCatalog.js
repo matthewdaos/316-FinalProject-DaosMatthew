@@ -19,21 +19,25 @@ export default function SongCatalog({ song }) {
 
     function edit() {
         closeMenu();
-        // index doesn't matter yet for catalog editing; 0 is fine for now
         store.showEditSongModal(0, song);
     }
 
     function remove() {
         closeMenu();
-        // you’ll hook this up later when you implement catalog deletion
-        // for now it just closes the menu
-        // store.markSongForDeletion(song);
+        if(store.showDeleteSongModal) {
+            store.showDeleteSongModal(song);
+        }
     }
 
-    function addToPlaylist(playlistId) {
+    async function addToPlaylist(playlistId) {
         closeMenu();
-        // you’ll implement this later when you add catalog→playlist behavior
-        // store.addSongToPlaylist(song, playlistId);
+
+        if (!song || !song._id) {
+            console.error("Cannot add song to playlist — missing _id:", song);
+            return;
+        }
+
+        await store.addSongToPlaylist(song._id, playlistId);
     }
 
     const listens = Number(song.listens ?? 0);
@@ -73,6 +77,7 @@ export default function SongCatalog({ song }) {
             <Menu anchorEl={anchorEl} open={open} onClose={closeMenu}>
                 <MenuItem disabled>Add to Playlist</MenuItem>
 
+                {/* ⭐ Playlist selection menu */}
                 {store.playlists && store.playlists.length > 0 ? (
                     store.playlists.map((p) => (
                         <MenuItem
