@@ -26,7 +26,9 @@ async function resetMongo() {
     console.log("Resetting the Mongo DB")
     await clearCollection(Playlist, "Playlist");
     await clearCollection(User, "User");
+    await clearCollection(Song, "Song")
     await fillCollection(Playlist, "Playlist", testData.playlists);
+    await fillCollection(Song, "Song", testData.songs)
     await fillCollection(User, "User", testData.users);
 }
 
@@ -37,5 +39,3 @@ mongoose
     .catch(e => {
         console.error('Connection error', e.message)
     })
-
-
