@@ -241,10 +241,11 @@ class DatabaseManager {
         }
     
         if(Array.isArray(songs)) {
-            playlist.songs = body.songs;
+            playlist.songs = songs;
         }
-
-        return playlist.save();
+        
+        const saved = await playlist.save();
+        return saved;
     }
 
     // SONG
