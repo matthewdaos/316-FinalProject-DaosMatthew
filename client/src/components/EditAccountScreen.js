@@ -14,28 +14,41 @@ export default function EditAccountScreen() {
 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirm, setConfirm] = useState("");
+
+    const [newPassword, setNewPassword] = useState("");
+    const [newConfirm, setNewConfirm] = useState("");
+
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
 
     useEffect(() => {
-        async function loadUser() {
-            const user = await auth.getUser();
-            if(!user) {
-                history.push("/login");
-                return;
-            }
-            setUsername(user.username || "");
-            setEmail(user.email || "");
-            setAvatarPreview(user.avatar || null);
+        if(!auth.loggedIn || !auth.user) {
+            history.push("/login");
+            return;
         }
-        loadUser()
+
+        const user = auth.user;
+        setUsername(user.username || "");
+        setEmail(user.email || "");
+        setAvatarPreview(user.avatar || null);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [auth.loggedIn, auth.user]);
 
-    const valid = username.trim().length > 0 && email.includes("@") && password.length >= 8 && password === confirm && avatarFile !== null;
+    const passwordFieldsFilled =
+        newPassword.length > 0 ||
+        newConfirm.length > 0;
+
+    let valid =
+        username.trim().length > 0 &&
+        email.includes("@");
+
+    if (passwordFieldsFilled) {
+        valid =
+            valid &&
+            newPassword.length >= 8 &&
+            newPassword === newConfirm;
+    }
 
     function handleAvatarUpload(e) {
         const file = e.target.files[0];
@@ -44,8 +57,15 @@ export default function EditAccountScreen() {
         setAvatarPreview(URL.createObjectURL(file));
     }
 
-    function handleSubmit() {
-        auth.updateUser(username, password, confirm, avatarFile);
+    async function handleSubmit() {
+        if(!valid) return;
+
+        const result = await auth.updateUser(username, newPassword, newConfirm, avatarFile);
+        if(result && result.ok) {
+            setNewPassword("");
+            setNewConfirm("");
+            history.push("/playlists");
+        }
     }
 
     function handleCancel() {
@@ -109,12 +129,12 @@ export default function EditAccountScreen() {
                 />
 
                 <TextField 
-                    label="Password (optional)"
+                    label="Password"
                     type="password"
                     fullWidth 
                     sx={{ mb: 2 }}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                 />
 
                 <TextField 
@@ -122,8 +142,8 @@ export default function EditAccountScreen() {
                     type="password"
                     fullWidth 
                     sx={{ mb: 3 }}
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
+                    value={newConfirm}
+                    onChange={(e) => setNewConfirm(e.target.value)}
                 />
 
                 <Button 
