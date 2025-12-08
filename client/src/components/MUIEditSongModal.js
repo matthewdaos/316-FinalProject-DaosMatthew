@@ -1,4 +1,3 @@
-// src/components/MUIEditSongModal.js
 import { useContext, useEffect, useState } from "react";
 import {
     Modal,
@@ -18,7 +17,7 @@ const modalStyle = {
     left: "50%",
     transform: "translate(-50%, -50%)",
     width: 380,
-    bgcolor: "#b8ffb2", // light green
+    bgcolor: "#b8ffb2", 
     border: "3px solid #000",
     boxShadow: 24,
     p: 0,
@@ -57,7 +56,6 @@ export default function MUIEditSongModal() {
     const [year, setYear] = useState(song.year || "");
     const [youTubeId, setYouTubeId] = useState(song.youTubeId || "");
 
-    // When modal opens / song changes, sync local state
     useEffect(() => {
         setTitle(song.title || "");
         setArtist(song.artist || "");
@@ -83,11 +81,9 @@ export default function MUIEditSongModal() {
             youTubeId: youTubeId.trim(),
         };
 
-        // If this song has an _id, treat it as a catalog song
         if (song._id && store.updateCatalogSong) {
             await store.updateCatalogSong(song._id, newSongData);
         } else if (store.addUpdateSongTransaction) {
-            // legacy playlist-based song edit (HW4 behavior)
             store.addUpdateSongTransaction(
                 store.currentSongIndex,
                 newSongData
