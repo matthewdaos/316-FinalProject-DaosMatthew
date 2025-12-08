@@ -155,8 +155,7 @@ updatePlaylist = async (req, res) => {
     const userId = req.userId;
     const playlistId = req.params.id;
 
-    const body = req.body.playlist || req.body || {};
-    const { name, songs } = body;
+    const { name, songs } = req.body;
 
     try {
         const result = await dbManager.updatePlaylist({

@@ -224,26 +224,26 @@ class DatabaseManager {
 
     async updatePlaylist({ ownerId, playlistId, name, songs }) {
         const playlist = await Playlist.findById(playlistId).exec();
-        if(!playlist) {
+        if (!playlist) {
             return { ok: false, reason: 'playlist not found' };
         }
-        
-        if(playlist.owner.toString() !== ownerId.toString()) {
+
+        if (playlist.owner.toString() !== ownerId.toString()) {
             return { ok: false, reason: 'not playlist owner' };
         }
-        
-        if(name && name !== playlist.name) {
+
+        if (typeof name === "string" && name.trim().length > 0 && name !== playlist.name) {
             const existing = await Playlist.findOne({ owner: ownerId, name }).exec();
-            if(existing) {
+            if (existing) {
                 return { ok: false, reason: 'playlist name conflict' };
             }
             playlist.name = name;
         }
-    
-        if(Array.isArray(songs)) {
-            playlist.songs = songs;
+
+        if (Array.isArray(songs)) {
+            playlist.songs = songs; 
         }
-        
+
         const saved = await playlist.save();
         return saved;
     }
