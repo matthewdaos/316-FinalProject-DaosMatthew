@@ -21,7 +21,6 @@ export default function EditAccountScreen() {
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
 
-    // For convenience in JSX
     const user = auth.user || {};
 
     useEffect(() => {
@@ -32,13 +31,10 @@ export default function EditAccountScreen() {
 
         setUsername(user.username || "");
         setEmail(user.email || "");
-
-        // use whatever field you’re storing for avatar (avatar, avatarUrl, etc.)
         setAvatarPreview(user.avatarUrl || user.avatar || null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.loggedIn, auth.user]);
 
-    // Clean up object URL when component unmounts or avatarPreview changes
     useEffect(() => {
         return () => {
             if (avatarPreview && avatarPreview.startsWith("blob:")) {
@@ -67,14 +63,12 @@ export default function EditAccountScreen() {
         const img = new Image();
 
         img.onload = () => {
-            // enforce 250x250 max dimensions
             if (img.width > 250 || img.height > 250) {
                 alert("Avatar image must be at most 250x250 pixels.");
                 URL.revokeObjectURL(objectUrl);
                 return;
             }
 
-            // OK to use this preview
             setAvatarPreview(objectUrl);
             setAvatarFile(file);
         };
@@ -85,7 +79,6 @@ export default function EditAccountScreen() {
     async function handleSubmit() {
         if (!valid) return;
 
-        // auth.updateUser should accept avatarFile on backend side
         const result = await auth.updateUser(
             username,
             newPassword,
