@@ -6,6 +6,7 @@ import SortMenu from "./SortMenu";
 import { GlobalStoreContext } from "../store";
 import MUIDeleteModal from "./MUIDeleteModal";
 import MUIEditPlaylistModal from "./MUIEditPlaylistModal";
+import MUIPlayPlaylistModal from "./MUIPlayPlaylistModal";
 
 export default function PlaylistsScreen() {
     const { store } = useContext(GlobalStoreContext);
@@ -114,6 +115,7 @@ export default function PlaylistsScreen() {
 
             <MUIDeleteModal />
             <MUIEditPlaylistModal />
+            <MUIPlayPlaylistModal />
         </Box>
     );
 }
