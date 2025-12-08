@@ -6,7 +6,7 @@ copyPlaylist = async(req, res) => {
 
     try {
         const result = await dbManager.copyPlaylist({
-            ownerId: ownerId,
+            ownerId: userId,
             sourcePlaylistId: playlistId
         });
 
