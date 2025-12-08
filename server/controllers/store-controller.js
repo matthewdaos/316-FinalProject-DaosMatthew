@@ -154,32 +154,36 @@ searchPlaylists = async (req, res) => {
 updatePlaylist = async (req, res) => {
     const userId = req.userId;
     const playlistId = req.params.id;
-    const { name, songs } = req.body;
+
+    const body = req.body.playlist || req.body || {};
+    const { name, songs } = body;
 
     try {
         const result = await dbManager.updatePlaylist({
-            ownerId: ownerId,
+            ownerId: userId,
             playlistId,
-            name, 
-            songs
-        })
-        if(result && result.ok === false) {
-            if(result.reason === 'playlist not found') {
+            name,
+            songs,
+        });
+
+        if (result && result.ok === false) {
+            if (result.reason === 'playlist not found') {
                 return res.status(404).json({ success: false, errorMessage: 'Playlist not found' });
             }
-            if(result.reason === 'not playlist owner') {
+            if (result.reason === 'not playlist owner') {
                 return res.status(403).json({ success: false, errorMessage: 'authentication error' });
             }
-            if(result.reason === 'playlist name conflict') {
+            if (result.reason === 'playlist name conflict') {
                 return res.status(400).json({ success: false, errorMessage: 'Already have playlist of that name' });
             }
         }
-        return res.status(200).json({ success: true, playlist: result })
+
+        return res.status(200).json({ success: true, playlist: result });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, errorMessage: 'Playlist not updated' });
     }
-}
+};
 module.exports = {
     copyPlaylist,
     createPlaylist,
