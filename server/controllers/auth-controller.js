@@ -149,7 +149,7 @@ updateAccount = async (req, res) => {
     try {
         const userId = req.userId;
 
-        const { username, avatar, currentPassword, newPassword, newPasswordVerify } = req.body;
+        const { username, newPassword, newPasswordVerify, avatar } = req.body;
 
         const user = await dbManager.findUserById(userId);
         if (!user) {
@@ -159,14 +159,9 @@ updateAccount = async (req, res) => {
         if (username) user.username = username;
         if(avatar) user.avatar = avatar;
 
-        if (newPassword || newPasswordVerify || currentPassword) {
-            if (!currentPassword || !newPassword || !newPasswordVerify) {
+        if (newPassword || newPasswordVerify) {
+            if (!newPassword || !newPasswordVerify) {
                 return res.status(400).json({ errorMessage: "Please provide current and new passwords." });
-            }
-
-            const currentValid = await bcrypt.compare(currentPassword, user.passwordHash);
-            if(!currentValid) {
-                return res.status(401).json({ errorMessage: "Current password is incorrect." });
             }
 
             if (newPassword.length < 8) {
