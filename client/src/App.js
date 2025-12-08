@@ -7,6 +7,7 @@ import {
     RegisterScreen,
     EditAccountScreen,
     PlaylistScreen,
+    SongScreen
 } from './components';
 
 function App () {   
@@ -19,6 +20,7 @@ function App () {
                 <Route path="/create-account" component={RegisterScreen} />
                 <Route path="/edit-account" component={EditAccountScreen} />
                 <Route path="/playlists" component={PlaylistScreen} />
+                <Route path="/songs-catalog" component={SongScreen} />
             </Switch>
         </BrowserRouter>
     );
