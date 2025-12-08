@@ -1,71 +1,60 @@
-import { useContext, useEffect } from 'react'
-import { GlobalStoreContext } from '../store'
-import PlaylistCard from './PlaylistCard.js'
-import MUIDeleteModal from './MUIDeleteModal'
+import Card from '@mui/material/Card';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 
-import AddIcon from '@mui/icons-material/Add';
-import Fab from '@mui/material/Fab'
-import List from '@mui/material/List';
-import Box from '@mui/material/Box'
-/*
-    This React component lists all the top5 lists in the UI.
-    
-    @author McKilla Gorilla
-*/
-const HomeScreen = () => {
-    const { store } = useContext(GlobalStoreContext);
+import { useHistory } from "react-router-dom";
 
-    useEffect(() => {
-        store.loadIdNamePairs();
-    }, []);
+export default function HomeScreen() {
+    const history = useHistory();
 
-    function handleCreateNewList() {
-        store.createNewList();
-    }
-    let listCard = "";
-    if (store) {
-        listCard = 
-            <List sx={{width: '100%', bgcolor: 'background.paper', mb:"20px" }}>
-            {
-                store.idNamePairs.map((pair) => (
-                    <PlaylistCard
-                        key={pair._id}
-                        idNamePair={pair}
-                        selected={false}
-                    />
-                ))
-                
-            }
-            <Fab sx={{transform:"translate(1150%, 10%)"}}
-                color="primary" 
-                aria-label="add"
-                id="add-list-button"
-                onClick={handleCreateNewList}
-            >
-                <AddIcon />
-            </Fab>
-            </List>;
-    }
     return (
-        <div id="playlist-selector">
-            <div id="list-selector-heading">
-            <Fab sx={{transform:"translate(-20%, 0%)"}}
-                color="primary" 
-                aria-label="add"
-                id="add-list-button"
-                onClick={handleCreateNewList}
-            >
-                <AddIcon />
-            </Fab>
-                Your Playlists
-            </div>
-            <Box sx={{bgcolor:"background.paper"}} id="list-selector-list">
-                {
-                    listCard
-                }
-                <MUIDeleteModal />
-            </Box>
-        </div>)
-}
+        <Box sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "90vh",
+            backgroundColor: "#fdeaff"
+        }}>
+            <Card sx={{
+                width: "70%",
+                maxWidth: "800px",
+                padding: 5,
+                textAlign: "center",
+                backgroundColor: "#fff6d5",
+                boxShadow: 4
+            }}>
+                <Typography variant="h3" sx={{ mb: 4 }}>
+                    The Playlister
+                </Typography>
 
-export default HomeScreen;
+                <QueueMusicIcon 
+                    sx={{
+                        fontSize: 120,
+                        mb: 4,
+                        transform: "rotate(180deg)",
+                        color: "black"
+                    }}
+                />
+
+                <Box sx={{ display: "flex", justifyContent: "center", gap: 3 }}>
+                    <Button
+                        variant="contained"
+                        onClick={() => history.push("/playlists")}
+                    >Continue as Guest</Button>
+
+                <Button
+                    variant="contained"
+                    onClick={() => history.push("/login")}
+                >Login</Button>
+
+                <Button
+                    variant="contained"
+                    onClick={() => history.push("/create-account")}
+                >Create Account</Button>
+                </Box>
+            </Card>
+        </Box>
+    );
+}
