@@ -22,8 +22,6 @@ getLoggedIn = async (req, res) => {
             loggedIn: true,
             user: {
                 username: loggedInUser.username,
-                firstName: loggedInUser.firstName,
-                lastName: loggedInUser.lastName,
                 email: loggedInUser.email,
                 avatar: loggedInUser.avatar,
                 _id: loggedInUser._id
@@ -69,8 +67,6 @@ loginUser = async (req, res) => {
             success: true,
             user: {
                 username: existingUser.username,
-                firstName: existingUser.firstName,
-                lastName: existingUser.lastName,  
                 email: existingUser.email,
                 avatar: existingUser.avatar             
             }
@@ -93,72 +89,65 @@ logoutUser = async (req, res) => {
 
 registerUser = async (req, res) => {
     console.log("REGISTERING USER IN BACKEND");
+    console.log("req.body =", req.body);
+
     try {
-        const { firstName, lastName, username, email, password, passwordVerify, avatar } = req.body;
-        console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
-        if (!username || !email || !password || !passwordVerify || !avatar) {
+        const { username, email, password, passwordVerify, avatar } = req.body;
+
+        if (!username || !email || !password || !passwordVerify) {
             return res.status(400).json({ errorMessage: "Please enter all required fields." });
         }
 
         console.log("all fields provided");
+
         if (password.length < 8) {
             return res.status(400).json({ errorMessage: "Please enter a password of at least 8 characters." });
         }
 
         console.log("password long enough");
+
         if (password !== passwordVerify) {
-            return res.status(400).json({ errorMessage: "Please enter the same password twice." })
+            return res.status(400).json({ errorMessage: "Please enter the same password twice." });
         }
 
         console.log("password and password verify match");
 
         const existingUser = await dbManager.findUserByEmail(email);
-        console.log("existingUser: " + existingUser);
+        console.log("existingUser:", existingUser);
         if (existingUser) {
-            return res.status(400).json({ success: false, errorMessage: "An account with this email address already exists." })
+            return res.status(400).json({
+                success: false,
+                errorMessage: "An account with this email address already exists."
+            });
         }
 
         const saltRounds = 10;
         const salt = await bcrypt.genSalt(saltRounds);
         const passwordHash = await bcrypt.hash(password, salt);
-        console.log("passwordHash: " + passwordHash);
+        console.log("passwordHash:", passwordHash);
 
         const savedUser = await dbManager.createUser({
-            firstName: firstName || "", 
-            lastName: lastName || "", 
             username,
             email,
             passwordHash,
-            avatar
-        })
-        console.log("new user saved: " + savedUser._id);
+            avatar: avatar || "default-avatar.png"
+        });
+        console.log("new user saved:", savedUser._id);
 
-        // LOGIN THE USER
-        const token = auth.signToken(savedUser._id);
-        console.log("token:" + token);
-
-        await res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none"
-        }).status(200).json({
+        return res.status(200).json({
             success: true,
             user: {
                 username: savedUser.username,
-                firstName: savedUser.firstName,
-                lastName: savedUser.lastName,  
                 email: savedUser.email,
-                avatar: savedUser.avatar              
+                avatar: savedUser.avatar
             }
-        })
-
-        console.log("token sent");
+        });
 
     } catch (err) {
         console.error(err);
         res.status(500).send();
     }
-}
+};
 
 updateAccount = async (req, res) => {
     try {
@@ -201,8 +190,6 @@ updateAccount = async (req, res) => {
             success: true,
             user: {
                 username: savedUser.username,
-                firstName: savedUser.firstName,
-                lastName: savedUser.lastName,
                 email: savedUser.email,
                 avatar: savedUser.avatar
             }
