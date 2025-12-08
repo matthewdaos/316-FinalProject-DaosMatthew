@@ -17,17 +17,23 @@ export default function PlaylistCard({ playlist }) {
 
     const name = playlist.name || "(untitled)";
 
+    const avatarUrl =
+        playlist.ownerAvatarUrl ||
+        playlist.ownerAvatar ||
+        (playlist.owner && playlist.owner.avatar) ||
+        null;
+
     const ownerDisplay =
         playlist.ownerUsername ||
         playlist.ownerName ||
         playlist.ownerEmail ||
         "";
 
-    const listeners = playlist.listeners ?? 0;
-
     const avatarLetter = ownerDisplay
         ? ownerDisplay[0].toUpperCase()
         : "?";
+
+    const listeners = playlist.listeners ?? 0;
 
     function handleDelete() {
         if (store.markListForDeletion) {
@@ -41,15 +47,16 @@ export default function PlaylistCard({ playlist }) {
         }
     }
 
-    function handleCopy() {
-        if (store.copyPlaylist) {
-            store.copyPlaylist(playlist._id);
+
+    function handlePlay() {
+        if(store.showPlaylistModal) {
+            store.showPlaylistModal(playlist._id);
         }
     }
 
-    function handlePlay() {
-        if (store.setCurrentList) {
-            store.setCurrentList(playlist._id);
+    function handleCopy() {
+        if (store.copyPlaylist) {
+            store.copyPlaylist(playlist._id);
         }
     }
 
@@ -80,7 +87,7 @@ export default function PlaylistCard({ playlist }) {
                     justifyContent="space-between"
                 >
                     <Box display="flex" alignItems="center">
-                        <Avatar sx={{ mr: 2 }}>
+                        <Avatar src={avatarUrl || undefined} sx={{ mr: 2, width: 56, height: 56 }}>
                             {avatarLetter}
                         </Avatar>
 
