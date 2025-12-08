@@ -91,7 +91,7 @@ export default function AppBanner() {
                                 Playlists
                             </Button>
 
-                            <Button color="inherit" onClick={() => history.push("/songs")}>
+                            <Button color="inherit" onClick={() => history.push("/songs-catalog")}>
                                 Song Catalog
                             </Button>
                         </>
