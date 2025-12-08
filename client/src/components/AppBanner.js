@@ -27,13 +27,21 @@ export default function AppBanner() {
         setAnchorEl(null);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         handleMenuClose();
-        auth.logoutUser();
+        const result = await auth.logoutUser();
+
+        if(result && result.ok) {
+            history.push("/");
+        }
     };
 
     const handleHomeClick = () => {
-        history.push('/');
+        if(auth.loggedIn) {
+            history.push("/playlists")
+        } else {
+            history.push('/');
+        }
     };
 
     const menuId = 'primary-account-menu';
@@ -96,13 +104,13 @@ export default function AppBanner() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
-            <AppBar position="static" sx={{ backgroundColor: '#e100ff' }}>
+            <AppBar position="static" sx={{ backgroundColor: '#006CA5' }}>
                 <Toolbar>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Link
                             onClick={handleHomeClick}
-                            style={{ textDecoration: 'none', color: 'white' }}
-                            to="/"
+                            style={{ textDecoration: 'none', color: 'white', fontSize: '2.2rem' }}
+                            to={auth.loggedIn ? "/playlists" : "/"}
                         >
                             ⌂
                         </Link>
