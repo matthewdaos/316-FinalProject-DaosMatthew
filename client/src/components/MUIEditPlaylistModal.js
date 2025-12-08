@@ -14,7 +14,6 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import AddIcon from "@mui/icons-material/Add"
 
 import { GlobalStoreContext } from "../store";
 
@@ -43,7 +42,12 @@ export default function MUIEditPlaylistModal() {
 
     // === EVENT HANDLERS =========================
 
-    function handleClose() {
+    function handleConfirm() {
+        if (name !== playlist.name) {
+            store.changeListName(playlist._id, name);
+        }
+        store.updateCurrentList();
+
         store.hideModals();
     }
 
@@ -79,7 +83,6 @@ export default function MUIEditPlaylistModal() {
     return (
         <Dialog
             open={open}
-            onClose={handleClose}
             maxWidth={false}
             fullWidth
             PaperProps={{
@@ -105,24 +108,25 @@ export default function MUIEditPlaylistModal() {
                     pb: 1,
                 }}
             >
-                <Typography variant="h6">
+                {/* Left side: Playlist Title */}
+                <Typography variant="h6" component="span">
                     Edit Playlist
                 </Typography>
 
-                <Box display="flex" alignItems="center">
-                    <IconButton
-                        size="small"
-                        onClick={handleAddSong}
-                        sx={{ mr: 1 }}
-                        disabled={store.canAddNewSong && !store.canAddNewSong()}
-                    >
-                        <AddIcon sx={{ color: "white" }} />
-                    </IconButton>
-
-                    <IconButton onClick={handleClose} size="small">
-                        <CloseIcon sx={{ color: "white" }} />
-                    </IconButton>
-                </Box>
+                {/* Right side: Add Song button */}
+                <Button
+                    variant="contained"
+                    size="small"
+                    sx={{
+                        backgroundColor: "white",
+                        color: "#008000",
+                        fontWeight: "bold",
+                        "&:hover": { backgroundColor: "#e4ffe4" }
+                    }}
+                    onClick={handleAddSong}
+                >
+                    + Add Song
+                </Button>
             </DialogTitle>
 
             {/* CONTENT */}
@@ -245,13 +249,13 @@ export default function MUIEditPlaylistModal() {
                     </Button>
                 </Box>
 
-                {/* RIGHT SIDE: Close */}
+                {/* RIGHT SIDE: Confirm */}
                 <Button
                     variant="contained"
                     sx={{ borderRadius: "20px" }}
-                    onClick={handleClose}
+                    onClick={handleConfirm}
                 >
-                    Close
+                    Confirm
                 </Button>
             </DialogActions>
         </Dialog>
