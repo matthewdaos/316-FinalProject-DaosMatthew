@@ -4,6 +4,7 @@ import HomeScreen from './HomeScreen'
 import ListCard from './PlaylistCard'
 import LoginScreen from './LoginScreen'
 import MUIDeleteModal from './MUIDeleteModal'
+import MUIEditPlaylistModal from './MUIEditPlaylistModal'
 import MUIEditSongModal from './MUIEditSongModal'
 import MUIErrorModal from './MUIErrorModal'
 import PlaylistScreen from './PlaylistScreen'
@@ -20,6 +21,7 @@ export {
     ListCard, 
     LoginScreen,
     MUIDeleteModal,
+    MUIEditPlaylistModal,
     MUIEditSongModal,
     MUIErrorModal,
     PlaylistScreen,
