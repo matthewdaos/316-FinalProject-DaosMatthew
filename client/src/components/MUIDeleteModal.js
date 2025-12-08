@@ -26,7 +26,7 @@ export default function MUIDeleteModal() {
             fullWidth
             PaperProps={{
                 sx: {
-                    backgroundColor: "#b6ffb6", // light green like your screenshot
+                    backgroundColor: "#b6ffb6"
                 },
             }}
         >
@@ -44,7 +44,6 @@ export default function MUIDeleteModal() {
             </DialogContent>
 
             <DialogActions>
-                {/* Wrap buttons in a Box so they align to the far left */}
                 <Box sx={{ display: "flex", justifyContent: "flex-start", width: "100%", pl: 2, pb: 2 }}>
                     <Button
                         variant="contained"
