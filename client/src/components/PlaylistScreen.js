@@ -43,9 +43,7 @@ export default function PlaylistsScreen() {
 
     return (
         <Box sx={{ width: "100%", mt: 4, px: 4, boxSizing: "border-box" }}>
-            {/* TOP SECTION: filters + divider + playlist list */}
             <Box display="flex" alignItems="flex-start">
-                {/* LEFT FILTERS */}
                 <Box sx={{ width: "30%" }}>
                     <PlaylistFiltersPanel
                         filters={filters}
@@ -53,12 +51,9 @@ export default function PlaylistsScreen() {
                     />
                 </Box>
 
-                {/* VERTICAL DIVIDER */}
                 <Divider orientation="vertical" flexItem sx={{ mx: 3 }} />
 
-                {/* RIGHT PLAYLIST COLUMN */}
                 <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-                    {/* header row */}
                     <Box
                         display="flex"
                         justifyContent="space-between"
@@ -72,7 +67,6 @@ export default function PlaylistsScreen() {
                             {playlistCount} Playlists
                         </Typography>
                     </Box>
-                     {/* scrollable list */}
                     <Box
                         sx={{
                             mt: 2,
@@ -92,7 +86,6 @@ export default function PlaylistsScreen() {
                 justifyContent="space-between"
                 alignItems="center"
             >
-                {/* LEFT: Search / Clear */}
                 <Box>
                     <Button
                         variant="contained"
@@ -110,7 +103,6 @@ export default function PlaylistsScreen() {
                     </Button>
                 </Box>
 
-                {/* RIGHT: New Playlist */}
                 <Button
                     variant="contained"
                     sx={{ borderRadius: "20px", px: 3 }}
