@@ -31,20 +31,31 @@ export const loginUser = (email, password) => {
     })
 }
 export const logoutUser = () => api.get(`/logout/`)
-export const registerUser = (firstName, lastName, email, password, passwordVerify) => {
-    return api.post(`/register/`, {
-        firstName : firstName,
-        lastName : lastName,
-        email : email,
-        password : password,
-        passwordVerify : passwordVerify
+export const registerUser = (formData) => {
+    return api.post(`/register/`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
     })
 }
+
+export const updateUser = (formData) => {
+    return api.put(`/update`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    })
+}
+
+export const getUser = () => api.get(`/user`)
+
 const apis = {
     getLoggedIn,
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    updateUser,
+    getUser
 }
 
 export default apis

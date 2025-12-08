@@ -23,6 +23,7 @@ function AuthContextProvider(props) {
 
     useEffect(() => {
         auth.getLoggedIn();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const authReducer = (action) => {
@@ -56,6 +57,13 @@ function AuthContextProvider(props) {
                     errorMessage: payload.errorMessage
                 })
             }
+            case AuthActionType.UPDATE_USER: {
+                return setAuth({
+                    user: payload.user,
+                    loggedIn: payload.loggedIn,
+                    errorMessage: payload.errorMessage
+                })
+            }
             default:
                 return auth;
         }
@@ -74,10 +82,19 @@ function AuthContextProvider(props) {
         }
     }
 
-    auth.registerUser = async function(firstName, lastName, email, password, passwordVerify) {
+    auth.registerUser = async function(username, email, password, passwordVerify, avatarFile) {
         console.log("REGISTERING USER");
         try{   
-            const response = await authRequestSender.registerUser(firstName, lastName, email, password, passwordVerify);   
+            const formData = new FormData();
+            formData.append("username", username);
+            formData.append("email", email);
+            formData.append("password", password);
+            formData.append("passwordVerify", passwordVerify);
+            if (avatarFile) {
+                formData.append("avatar", avatarFile);
+            }
+
+            const response = await authRequestSender.registerUser(formData);   
             if (response.status === 200) {
                 console.log("Registered Sucessfully");
                 authReducer({
@@ -108,7 +125,7 @@ function AuthContextProvider(props) {
     auth.loginUser = async function(email, password) {
         try{
             const response = await authRequestSender.loginUser(email, password);
-            if (response.status === 200) {
+            if (response.status === 200 && response.data.success) {
                 authReducer({
                     type: AuthActionType.LOGIN_USER,
                     payload: {
@@ -117,7 +134,7 @@ function AuthContextProvider(props) {
                         errorMessage: null
                     }
                 })
-                history.push("/");
+                history.push("/playlists");
             }
         } catch(error){
             authReducer({
@@ -138,18 +155,75 @@ function AuthContextProvider(props) {
                 type: AuthActionType.LOGOUT_USER,
                 payload: null
             })
-            history.push("/");
+            history.push("/")
         }
     }
+
+    auth.getUser = async function () {
+        const response = await authRequestSender.getUser()
+        if (response.status === 200 && response.data.success) {
+            authReducer({
+                type: AuthActionType.GET_LOGGED_IN,
+                payload: {
+                    loggedIn: true,
+                    user: response.data.user,
+                }
+            })
+            return response.data.user
+        }
+        return null
+    }
+
+    auth.updateUser = async function (username, password, passwordConfirm, avatarFile) {
+        try {
+            const formData = new FormData();
+            formData.append("username", username);
+            if (password) {
+                formData.append("password", password);
+                formData.append("passwordConfirm", passwordConfirm);
+            }
+            if (avatarFile) {
+                formData.append("avatar", avatarFile);
+            }
+
+            const response = await authRequestSender.updateUser(formData);
+            if (response.status === 200 && response.data.success) {
+                authReducer({
+                    type: AuthActionType.UPDATE_USER,
+                    payload: {
+                        user: response.data.user,
+                        loggedIn: true,
+                        errorMessage: null,
+                    },
+                });
+                history.push("/playlists");
+            }
+        } catch (error) {
+            console.error("updateUser error:", error);
+            authReducer({
+                type: AuthActionType.UPDATE_USER,
+                payload: {
+                    user: auth.user,
+                    loggedIn: true,
+                    errorMessage: error?.response?.data?.errorMessage || "Update failed",
+                },
+            });
+        }
+    };
 
     auth.getUserInitials = function() {
         let initials = "";
         if (auth.user) {
-            initials += auth.user.firstName.charAt(0);
-            initials += auth.user.lastName.charAt(0);
+            const name = auth.user.username.trim();
+            if(name.length >= 2) {
+                initials = name[0] + name[1];
+            } else if (name.length === 1) {
+                initials = name[0]
+            }
+            initials = initials.toUpperCase();
         }
         console.log("user initials: " + initials);
-        return initials;
+        return initials || "?";
     }
 
     return (
