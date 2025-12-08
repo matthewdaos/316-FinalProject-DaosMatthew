@@ -20,14 +20,12 @@ import { GlobalStoreContext } from "../store";
 export default function MUIEditPlaylistModal() {
     const { store } = useContext(GlobalStoreContext);
 
-    // Modal open state
     const open = store.isEditPlaylistModalOpen
         ? store.isEditPlaylistModalOpen()
         : false;
 
     const playlist = store.currentList;
 
-    // Local title field
     const [name, setName] = useState("");
 
     useEffect(() => {
@@ -39,8 +37,6 @@ export default function MUIEditPlaylistModal() {
     if (!playlist) return null;
 
     const songs = playlist.songs || [];
-
-    // === EVENT HANDLERS =========================
 
     function handleConfirm() {
         if (name !== playlist.name) {
@@ -96,7 +92,6 @@ export default function MUIEditPlaylistModal() {
                 },
             }}
         >
-            {/* HEADER BAR */}
             <DialogTitle
                 sx={{
                     backgroundColor: "#008000",
@@ -108,12 +103,10 @@ export default function MUIEditPlaylistModal() {
                     pb: 1,
                 }}
             >
-                {/* Left side: Playlist Title */}
                 <Typography variant="h6" component="span">
                     Edit Playlist
                 </Typography>
 
-                {/* Right side: Add Song button */}
                 <Button
                     variant="contained"
                     size="small"
@@ -129,14 +122,12 @@ export default function MUIEditPlaylistModal() {
                 </Button>
             </DialogTitle>
 
-            {/* CONTENT */}
             <DialogContent
                 sx={{
                     pt: 2,
                     background: "linear-gradient(to bottom, #b6ffb6, #d6ffd6)",
                 }}
             >
-                {/* TITLE INPUT BAR */}
                 <Box
                     sx={{
                         backgroundColor: "#7be57b",
@@ -160,7 +151,6 @@ export default function MUIEditPlaylistModal() {
                     />
                 </Box>
 
-                {/* SONG LIST */}
                 <Box
                     sx={{
                         backgroundColor: "#fffbe6",
@@ -192,13 +182,11 @@ export default function MUIEditPlaylistModal() {
                                     mb: 1,
                                 }}
                             >
-                                {/* LEFT TITLE */}
                                 <Typography variant="body1" sx={{ fontSize: "0.95rem" }}>
                                     {index + 1}. {song.title} by {song.artist}{" "}
                                     {song.year ? `(${song.year})` : ""}
                                 </Typography>
 
-                                {/* RIGHT ICONS */}
                                 <Box>
                                     <IconButton
                                         size="small"
@@ -219,7 +207,6 @@ export default function MUIEditPlaylistModal() {
                 </Box>
             </DialogContent>
 
-            {/* FOOTER BUTTONS */}
             <DialogActions
                 sx={{
                     backgroundColor: "#b6ffb6",
@@ -229,7 +216,6 @@ export default function MUIEditPlaylistModal() {
                     pb: 2,
                 }}
             >
-                {/* LEFT SIDE: Undo / Redo */}
                 <Box>
                     <Button
                         variant="contained"
@@ -249,7 +235,6 @@ export default function MUIEditPlaylistModal() {
                     </Button>
                 </Box>
 
-                {/* RIGHT SIDE: Confirm */}
                 <Button
                     variant="contained"
                     sx={{ borderRadius: "20px" }}
