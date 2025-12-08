@@ -42,13 +42,32 @@ export const updatePlaylistById = (id, playlist) => {
     })
 }
 
+export const createSong = ({ title, artist, year, youTubeId }) => {
+    return api.post(`/songs`, {   
+        title,
+        artist,
+        year,
+        youTubeId
+    });
+};
+
+export const getSongCatalog = () => api.get(`/songs`);
+
+export const updateSong = (id, data) => {
+    return api.put(`/songs/${id}`, data);
+};
+
 const apis = {
     copyPlaylistById,
     createPlaylist,
     deletePlaylistById,
     getPlaylistById,
     getPlaylistPairs,
-    updatePlaylistById
+    updatePlaylistById,
+
+    createSong,
+    getSongCatalog,
+    updateSong
 }
 
 export default apis

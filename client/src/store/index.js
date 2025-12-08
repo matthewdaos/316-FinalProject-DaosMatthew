@@ -42,6 +42,7 @@ const CurrentModal = {
     DELETE_LIST : "DELETE_LIST",
     EDIT_SONG : "EDIT_SONG",
     EDIT_PLAYLIST: "EDIT_PLAYLIST",
+    PLAY_PLAYLIST: "PLAY_PLAYLIST",
     ERROR : "ERROR"
 }
 
@@ -258,37 +259,53 @@ function GlobalStoreContextProvider(props) {
 
     // THIS FUNCTION PROCESSES CHANGING A LIST NAME
     store.changeListName = function (id, newName) {
-        // GET THE LIST
         async function asyncChangeListName(id) {
+            // 1. Get the latest playlist from backend
             let response = await storeRequestSender.getPlaylistById(id);
-            if (response.data.success) {
-                let playlist = response.data.playlist;
-                playlist.name = newName;
-                async function updateList(playlist) {
-                    response = await storeRequestSender.updatePlaylistById(playlist._id, playlist);
-                    if (response.data.success) {
-                        async function getListPairs(playlist) {
-                            response = await storeRequestSender.getPlaylistPairs();
-                            if (response.data.success) {
-                                let pairsArray = response.data.idNamePairs;
-                                storeReducer({
-                                    type: GlobalStoreActionType.CHANGE_LIST_NAME,
-                                    payload: {
-                                        idNamePairs: pairsArray,
-                                        playlist: playlist
-                                    }
-                                });
-                                store.setCurrentList(id);
-                            }
-                        }
-                        getListPairs(playlist);
-                    }
-                }
-                updateList(playlist);
-            }
+            if (!response.data.success) return;
+
+            let playlist = response.data.playlist;
+            playlist.name = newName;
+
+            // 2. Update playlist in DB
+            response = await storeRequestSender.updatePlaylistById(
+                playlist._id,
+                playlist
+            );
+            if (!response.data.success) return;
+
+            // 3. Refresh pairs from backend
+            const pairsResponse = await storeRequestSender.getPlaylistPairs();
+            if (!pairsResponse.data.success) return;
+
+            const pairsArray = pairsResponse.data.idNamePairs || [];
+
+            // 4. Update playlists, allPlaylists, idNamePairs, currentList in store
+            setStore(prev => {
+                const updateNameInList = (list) =>
+                    (list || []).map(p =>
+                        p._id === playlist._id
+                            ? { ...p, name: playlist.name }
+                            : p
+                    );
+
+                return {
+                    ...prev,
+                    currentModal: prev.currentModal,
+                    playlists: updateNameInList(prev.playlists),
+                    allPlaylists: updateNameInList(prev.allPlaylists),
+                    idNamePairs: pairsArray,
+                    currentList: playlist,
+                    currentSongIndex: -1,
+                    currentSong: null,
+                    listNameActive: false,
+                    listIdMarkedForDeletion: null,
+                    listMarkedForDeletion: null
+                };
+            });
         }
         asyncChangeListName(id);
-    }
+    };
 
     // THIS FUNCTION PROCESSES CLOSING THE CURRENTLY LOADED LIST
     store.closeCurrentList = function () {
@@ -396,19 +413,69 @@ function GlobalStoreContextProvider(props) {
         asyncLoadIdNamePairs();
     }
     store.loadUserPlaylists = function () {
+        if (!auth.loggedIn || !auth.user) {
+            setStore(prev => ({
+                ...prev,
+                allPlaylists: [],
+                playlists: [],
+                currentList: null,
+                idNamePairs: [],
+                listIdMarkedForDeletion: null,
+                listMarkedForDeletion: null
+            }));
+            return;
+        }
         async function load() {
-            const response = await storeRequestSender.getPlaylistPairs();
-            if (response.data.success) {
-                const pairsArray = response.data.idNamePairs || [];
-                setStore(prev => ({
-                    ...prev,
-                    allPlaylists: pairsArray,
-                    playlists: pairsArray 
-                }));
+            try {
+                const response = await storeRequestSender.getPlaylistPairs();
+                if (response.data.success) {
+                    const pairsArray = response.data.idNamePairs || [];
+                    setStore(prev => ({
+                        ...prev,
+                        allPlaylists: pairsArray,
+                        playlists: pairsArray
+                    }));
+                }
+            } catch (err) {
+                if (err.response && err.response.status === 401) {
+                    setStore(prev => ({
+                        ...prev,
+                        allPlaylists: [],
+                        playlists: [],
+                        currentList: null,
+                        idNamePairs: [],
+                        listIdMarkedForDeletion: null,
+                        listMarkedForDeletion: null
+                    }));
+                } else {
+                    console.error("Failed to load playlists:", err);
+                }
+            }
+        }
+
+        load();
+    };
+
+    store.loadSongCatalog = function () {
+        async function load() {
+            try {
+                const response = await storeRequestSender.getSongCatalog();
+
+                if (response.data.success) {
+                    const songs = response.data.songs || [];
+                    setStore(prev => ({
+                        ...prev,
+                        catalogSongs: songs
+                    }));
+                } else {
+                    console.log("FAILED TO LOAD SONG CATALOG:", response.data);
+                }
+            } catch (err) {
+                console.error("Error loading song catalog:", err);
             }
         }
         load();
-    }
+    };
 
     store.searchPlaylists = function (filters, sortMethod) {
         const { name, user } = filters;
@@ -532,6 +599,26 @@ function GlobalStoreContextProvider(props) {
         }
         asyncOpen(id);
     };
+
+    store.showPlayPlaylistModal = function (id) {
+        async function asyncOpen(id) {
+            let response = await storeRequestSender.getPlaylistById(id);
+            if (response.data.success) {
+                let playlist = response.data.playlist;
+
+                storeReducer({
+                    type: GlobalStoreActionType.SET_CURRENT_LIST,
+                    payload: playlist
+                });
+
+                setStore(prev => ({
+                    ...prev,
+                    currentModal: CurrentModal.PLAY_PLAYLIST
+                }));    
+            }
+        }
+        asyncOpen(id);
+    };
     store.hideModals = () => {
         auth.errorMessage = null;
         storeReducer({
@@ -552,6 +639,10 @@ function GlobalStoreContextProvider(props) {
     store.isEditPlaylistModalOpen = () => {
         return store.currentModal === CurrentModal.EDIT_PLAYLIST;
     }
+
+    store.isPlayPlaylistModalOpen = () => {
+        return store.currentModal === CurrentModal.PLAY_PLAYLIST;
+    };
 
     // THE FOLLOWING 8 FUNCTIONS ARE FOR COORDINATING THE UPDATING
     // OF A LIST, WHICH INCLUDES DEALING WITH THE TRANSACTION STACK. THE
@@ -591,6 +682,57 @@ function GlobalStoreContextProvider(props) {
         // NOW MAKE IT OFFICIAL
         store.updateCurrentList();
     }
+
+    store.createNewCatalogSong = async function () {
+        const payload = {
+            title: "Untitled",
+            artist: "Unknown Artist",
+            year: new Date().getFullYear().toString(),
+            youTubeId: "dQw4w9WgXcQ"
+        };
+
+        try {
+            const response = await storeRequestSender.createSong(payload);
+
+            if (response.data.success) {
+                const newSong = response.data.song;
+
+                setStore(prev => ({
+                    ...prev,
+                    catalogSongs: [...(prev.catalogSongs || []), newSong]
+                }));
+
+                const index = (store.catalogSongs || []).length;
+                store.showEditSongModal(index, newSong);
+            } else {
+                console.error("Failed to create song:", response.data.errorMessage);
+            }
+        } catch (err) {
+            console.error("Error creating catalog song:", err);
+        }
+    };
+
+    store.updateCatalogSong = async function (songId, newSongData) {
+        try {
+            const response = await storeRequestSender.updateSong(songId, newSongData);
+
+            if (response.data.success) {
+                const updatedSong = response.data.song;
+
+                setStore(prev => ({
+                    ...prev,
+                    catalogSongs: (prev.catalogSongs || []).map(s =>
+                        s._id === updatedSong._id ? updatedSong : s
+                    )
+                }));
+            } else {
+                console.error("Failed to update catalog song:", response.data.errorMessage);
+            }
+        } catch (err) {
+            console.error("Error updating catalog song:", err);
+        }
+    };
+
     // THIS FUNCTION MOVES A SONG IN THE CURRENT LIST FROM
     // start TO end AND ADJUSTS ALL OTHER ITEMS ACCORDINGLY
     store.moveSong = function(start, end) {
