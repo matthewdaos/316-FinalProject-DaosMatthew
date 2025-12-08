@@ -1,9 +1,6 @@
 import { useContext, useState } from 'react';
-import { Link } from 'react-router-dom'
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import AuthContext from '../auth';
-import { GlobalStoreContext } from '../store'
-
-import EditToolbar from './EditToolbar'
 
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppBar from '@mui/material/AppBar';
@@ -12,11 +9,13 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 
 export default function AppBanner() {
     const { auth } = useContext(AuthContext);
-    const { store } = useContext(GlobalStoreContext);
+    const history = useHistory();
+    const location = useLocation();
+
     const [anchorEl, setAnchorEl] = useState(null);
     const isMenuOpen = Boolean(anchorEl);
 
@@ -31,101 +30,110 @@ export default function AppBanner() {
     const handleLogout = () => {
         handleMenuClose();
         auth.logoutUser();
-    }
+    };
 
-    const handleHouseClick = () => {
-        store.closeCurrentList();
-    }
+    const handleHomeClick = () => {
+        history.push('/');
+    };
 
-    const menuId = 'primary-search-account-menu';
+    const menuId = 'primary-account-menu';
+
     const loggedOutMenu = (
         <Menu
             anchorEl={anchorEl}
-            anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
             id={menuId}
-            keepMounted
-            transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
             open={isMenuOpen}
             onClose={handleMenuClose}
         >
-            <MenuItem onClick={handleMenuClose}><Link to='/login/'>Login</Link></MenuItem>
-            <MenuItem onClick={handleMenuClose}><Link to='/register/'>Create New Account</Link></MenuItem>
+            <MenuItem
+                onClick={() => {
+                    handleMenuClose();
+                    history.push('/login');
+                }}
+            >
+                Login
+            </MenuItem>
+            <MenuItem
+                onClick={() => {
+                    handleMenuClose();
+                    history.push('/create-account');
+                }}
+            >
+                Create Account
+            </MenuItem>
         </Menu>
     );
-    const loggedInMenu = 
+
+    const loggedInMenu = (
         <Menu
             anchorEl={anchorEl}
-            anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
             id={menuId}
-            keepMounted
-            transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
             open={isMenuOpen}
             onClose={handleMenuClose}
         >
+            <MenuItem
+                onClick={() => {
+                    handleMenuClose();
+                    history.push('/edit-account');
+                }}
+            >
+                Edit Account
+            </MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
-        </Menu>        
+        </Menu>
+    );
 
-    let editToolbar = "";
-    let menu = loggedOutMenu;
-    if (auth.loggedIn) {
-        menu = loggedInMenu;
-        if (store.currentList) {
-            editToolbar = <EditToolbar />;
-        }
+    function getAccountMenu() {
+        if (!auth.loggedIn) return <AccountCircle />;
+        const initials = auth.getUserInitials ? auth.getUserInitials() : '?';
+        return <div>{initials}</div>;
     }
-    
-    function getAccountMenu(loggedIn) {
-        let userInitials = auth.getUserInitials();
-        console.log("userInitials: " + userInitials);
-        if (loggedIn) 
-            return <div>{userInitials}</div>;
-        else
-            return <AccountCircle />;
-    }
+
+    const hideNavButtons =
+        location.pathname === '/' ||
+        location.pathname === '/login' ||
+        location.pathname === '/create-account';
 
     return (
-        <Box sx={{flexGrow: 1}}>
-            <AppBar position="static">
+        <Box sx={{ flexGrow: 1 }}>
+            <AppBar position="static" sx={{ backgroundColor: '#e100ff' }}>
                 <Toolbar>
-                    <Typography                        
-                        variant="h4"
-                        noWrap
-                        component="div"
-                        sx={{ display: { xs: 'none', sm: 'block' } }}                        
-                    >
-                        <Link onClick={handleHouseClick} style={{ textDecoration: 'none', color: 'white' }} to='/'>⌂</Link>
-                    </Typography>
-                    <Box sx={{ flexGrow: 1 }}>{editToolbar}</Box>
-                    <Box sx={{ height: "90px", display: { xs: 'none', md: 'flex' } }}>
-                        <IconButton
-                            size="large"
-                            edge="end"
-                            aria-label="account of current user"
-                            aria-controls={menuId}
-                            aria-haspopup="true"
-                            onClick={handleProfileMenuOpen}
-                            color="inherit"
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Link
+                            onClick={handleHomeClick}
+                            style={{ textDecoration: 'none', color: 'white' }}
+                            to="/"
                         >
-                            { getAccountMenu(auth.loggedIn) }
-                        </IconButton>
+                            ⌂
+                        </Link>
+
+                        {!hideNavButtons && (
+                            <>
+                                <Button
+                                    color="inherit"
+                                    onClick={() => history.push('/playlists')}
+                                >
+                                    Playlists
+                                </Button>
+                                <Button
+                                    color="inherit"
+                                    onClick={() => history.push('/songs')}
+                                >
+                                    Song Catalog
+                                </Button>
+                            </>
+                        )}
                     </Box>
+
+                    <Box sx={{ flexGrow: 1 }} />
+
+                    <IconButton onClick={handleProfileMenuOpen} color="inherit">
+                        {getAccountMenu()}
+                    </IconButton>
                 </Toolbar>
             </AppBar>
-            {
-                menu
-            }
+
+            {auth.loggedIn ? loggedInMenu : loggedOutMenu}
         </Box>
     );
 }
