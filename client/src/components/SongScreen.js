@@ -19,10 +19,8 @@ export default function SongScreen() {
 
     const [sortMethod, setSortMethod] = useState("Listens (Hi–Lo)");
 
-    // NEW: local state for filtered songs
     const [filteredSongs, setFilteredSongs] = useState([]);
 
-    // Load catalog on first mount
     useEffect(() => {
         if (store.loadSongCatalog) {
             store.loadSongCatalog();
@@ -30,8 +28,6 @@ export default function SongScreen() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Whenever the catalog changes (initial load, new song, edits),
-    // reset filteredSongs to show the full catalog.
     useEffect(() => {
         const allSongs = store.catalogSongs || [];
         setFilteredSongs(allSongs);
@@ -58,8 +54,7 @@ export default function SongScreen() {
             return true;
         });
 
-        // Sort
-        results = [...results]; // copy before sort just in case
+        results = [...results]; 
         switch (sortMethod) {
             case "Listens (Lo–Hi)":
                 results.sort(
