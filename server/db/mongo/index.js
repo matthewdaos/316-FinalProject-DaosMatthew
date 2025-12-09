@@ -113,7 +113,7 @@ class DatabaseManager {
     }
 
     async getPlaylistById(id) {
-        return Playlist.findById(id).exec();
+        return Playlist.findById(id).populate('songs').exec();
     }
 
     async getUserPlaylistPairs(userId) {
@@ -272,7 +272,11 @@ class DatabaseManager {
             await song.save();
         }
 
-        return { ok: true, playlist };
+        const populated = await Playlist.findById(playlist._id)
+            .populate('songs')
+            .exec();
+
+        return { ok: true, playlist: populated };
     }
 
     async createSong({ ownerId, title, artist, year, youTubeId }) {
