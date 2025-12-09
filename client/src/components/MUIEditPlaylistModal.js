@@ -37,7 +37,6 @@ export default function MUIEditPlaylistModal() {
     }
 
     function handleClose() {
-        // Undo everything we did in this edit session
         while (store.canUndo()) {
             store.undo();
         }
