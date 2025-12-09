@@ -23,7 +23,6 @@ export default function MUIPlayPlaylistModal() {
 
     const playlist = store.currentList;
 
-    // Local index of the current song being played
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
@@ -45,7 +44,6 @@ export default function MUIPlayPlaylistModal() {
 
     const avatarLetter = ownerName ? ownerName[0].toUpperCase() : "?";
 
-    // Youtube embed URL (basic embed API)
     const youTubeId = currentSong?.youTubeId || "dQw4w9WgXcQ";
     const embedUrl = `https://www.youtube.com/embed/${youTubeId}?autoplay=1`;
 
@@ -82,7 +80,6 @@ export default function MUIPlayPlaylistModal() {
                 },
             }}
         >
-            {/* Title bar */}
             <DialogTitle
                 sx={{
                     backgroundColor: "#008000",
@@ -101,7 +98,6 @@ export default function MUIPlayPlaylistModal() {
                 }}
             >
                 <Box display="flex" height="100%">
-                    {/* LEFT: playlist info + list of songs */}
                     <Box
                         sx={{
                             flex: 1,
@@ -113,7 +109,6 @@ export default function MUIPlayPlaylistModal() {
                             overflow: "hidden",
                         }}
                     >
-                        {/* Header with avatar and playlist title */}
                         <Box
                             sx={{
                                 display: "flex",
@@ -138,7 +133,6 @@ export default function MUIPlayPlaylistModal() {
                             </Box>
                         </Box>
 
-                        {/* Song list */}
                         <Box sx={{ flex: 1, overflowY: "auto" }}>
                             <List disablePadding>
                                 {songs.map((song, index) => (
@@ -184,7 +178,6 @@ export default function MUIPlayPlaylistModal() {
                         </Box>
                     </Box>
 
-                    {/* RIGHT: YouTube player + controls */}
                     <Box
                         sx={{
                             flex: 1,
@@ -192,11 +185,10 @@ export default function MUIPlayPlaylistModal() {
                             flexDirection: "column",
                         }}
                     >
-                        {/* YouTube embed */}
                         <Box
                             sx={{
                                 position: "relative",
-                                paddingTop: "56.25%", // 16:9
+                                paddingTop: "56.25%", 
                                 backgroundColor: "#000",
                                 borderRadius: 2,
                                 overflow: "hidden",
@@ -218,7 +210,6 @@ export default function MUIPlayPlaylistModal() {
                             />
                         </Box>
 
-                        {/* Controls */}
                         <Box
                             sx={{
                                 mt: 2,
@@ -235,9 +226,6 @@ export default function MUIPlayPlaylistModal() {
                                 ⏮
                             </Button>
 
-                            {/* We rely on autoplay when changing song index,
-                                so we don't need a special play/pause button.
-                                You could still add one to reload the iframe. */}
                             <Button
                                 variant="contained"
                                 onClick={handleNext}
