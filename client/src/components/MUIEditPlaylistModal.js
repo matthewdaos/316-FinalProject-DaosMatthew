@@ -1,15 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Box,
-    Typography,
-    TextField,
-    IconButton,
-    Button,
-} from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography, TextField, IconButton, Button } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -42,22 +32,16 @@ export default function MUIEditPlaylistModal() {
         if (name !== playlist.name) {
             store.changeListName(playlist._id, name);
         }
-        store.updateCurrentList();
-
+        store.updateCurrentList();      
         store.hideModals();
     }
 
-    function handleNameBlur() {
-        if (name && name !== playlist.name) {
-            store.changeListName(playlist._id, name);
+    function handleClose() {
+        // Undo everything we did in this edit session
+        while (store.canUndo()) {
+            store.undo();
         }
-    }
-
-    function handleAddSong() {
-        if(store.canAddNewSong && !store.canAddNewSong()) return;
-        if(store.addNewSong) {
-            store.addNewSong();
-        }
+        store.hideModals();
     }
 
     function handleEditSong(index, song) {
@@ -65,7 +49,7 @@ export default function MUIEditPlaylistModal() {
     }
 
     function handleDeleteSong(index, song) {
-        store.addRemoveSongTransaction(song, index);
+        store.addRemoveSongTransaction(song, index);   
     }
 
     function handleUndo() {
@@ -79,6 +63,13 @@ export default function MUIEditPlaylistModal() {
     return (
         <Dialog
             open={open}
+            disableEscapeKeyDown
+            onClose={(event, reason) => {
+                if(reason === "backdropClick" || reason === "escapeKeyDown") {
+                    return;
+                }
+                handleClose();
+            }}
             maxWidth={false}
             fullWidth
             PaperProps={{
@@ -107,19 +98,10 @@ export default function MUIEditPlaylistModal() {
                     Edit Playlist
                 </Typography>
 
-                <Button
-                    variant="contained"
-                    size="small"
-                    sx={{
-                        backgroundColor: "white",
-                        color: "#008000",
-                        fontWeight: "bold",
-                        "&:hover": { backgroundColor: "#e4ffe4" }
-                    }}
-                    onClick={handleAddSong}
-                >
-                    + Add Song
-                </Button>
+                <IconButton onClick={handleClose} size="small">
+                    <CloseIcon sx={{ color: "white" }} />
+                </IconButton>
+
             </DialogTitle>
 
             <DialogContent
@@ -143,7 +125,6 @@ export default function MUIEditPlaylistModal() {
                         variant="outlined"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        onBlur={handleNameBlur}
                         sx={{
                             backgroundColor: "white",
                             borderRadius: "6px",
