@@ -716,6 +716,48 @@ function GlobalStoreContextProvider(props) {
     store.getPlaylistSize = function() {
         return store.currentList.songs.length;
     }
+
+    store.addSongFromCatalogToPlaylist = async function (song, playlistId) {
+        try {
+            const response = await storeRequestSender.addSongToPlaylist(
+                song._id,
+                playlistId
+            );
+
+            if (!response.data || !response.data.success) {
+                console.error("Failed to add song to playlist:", response.data);
+                return;
+            }
+
+            const updatedPlaylist = response.data.playlist;
+
+            setStore(prev => {
+                const updateListArray = (arr) =>
+                    (arr || []).map(pl =>
+                        pl._id === updatedPlaylist._id ? updatedPlaylist : pl
+                    );
+
+                const newPlaylists    = updateListArray(prev.playlists);
+                const newAllPlaylists = updateListArray(prev.allPlaylists);
+
+                let newCurrentList = prev.currentList;
+                if (prev.currentList && prev.currentList._id === updatedPlaylist._id) {
+                    newCurrentList = updatedPlaylist;
+                }
+
+                return {
+                    ...prev,
+                    playlists: newPlaylists,
+                    allPlaylists: newAllPlaylists,
+                    currentList: newCurrentList
+                };
+            });
+
+        } catch (err) {
+            console.error("Error adding song from catalog to playlist:", err);
+        }
+    };
+
     store.addNewSong = function() {
         let index = this.getPlaylistSize();
         this.addCreateSongTransaction(index, "Untitled", "?", new Date().getFullYear(), "dQw4w9WgXcQ");
