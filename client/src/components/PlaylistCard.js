@@ -10,10 +10,15 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { GlobalStoreContext } from "../store";
+import AuthContext from "../auth";
 
 export default function PlaylistCard({ playlist }) {
     const { store } = useContext(GlobalStoreContext);
+    const { auth } = useContext(AuthContext);
+
     const [expanded, setExpanded] = useState(false);
+
+    const isGuest = !auth.loggedIn; // guest = not logged in
 
     const name = playlist.name || "(untitled)";
 
@@ -29,6 +34,11 @@ export default function PlaylistCard({ playlist }) {
         playlist.ownerEmail ||
         "";
 
+    const songs =
+        Array.isArray(playlist.songDocs) && playlist.songDocs.length > 0
+            ? playlist.songDocs
+            : playlist.songs || [];
+
     const avatarLetter = ownerDisplay
         ? ownerDisplay[0].toUpperCase()
         : "?";
@@ -36,25 +46,27 @@ export default function PlaylistCard({ playlist }) {
     const listeners = playlist.listeners ?? 0;
 
     function handleDelete() {
+        if (isGuest) return;
         if (store.markListForDeletion) {
             store.markListForDeletion(playlist._id);
         }
     }
 
     function handleEdit() {
+        if (isGuest) return;
         if (store.showEditPlaylistModal) {
             store.showEditPlaylistModal(playlist._id);
         }
     }
 
-
     function handlePlay() {
-        if(store.showPlaylistModal) {
-            store.showPlaylistModal(playlist._id);
+        if (store.showPlayPlaylistModal) {
+            store.showPlayPlaylistModal(playlist._id);
         }
     }
 
     function handleCopy() {
+        if (isGuest) return;
         if (store.copyPlaylist) {
             store.copyPlaylist(playlist._id);
         }
@@ -76,8 +88,6 @@ export default function PlaylistCard({ playlist }) {
         return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
 
-    const songs = playlist.songs || [];
-
     return (
         <Card sx={{ mb: 2, borderRadius: "12px" }}>
             <CardContent>
@@ -86,8 +96,12 @@ export default function PlaylistCard({ playlist }) {
                     alignItems="center"
                     justifyContent="space-between"
                 >
+                    {/* Left side: avatar + text */}
                     <Box display="flex" alignItems="center">
-                        <Avatar src={avatarUrl || undefined} sx={{ mr: 2, width: 56, height: 56 }}>
+                        <Avatar
+                            src={avatarUrl || undefined}
+                            sx={{ mr: 2, width: 56, height: 56 }}
+                        >
                             {avatarLetter}
                         </Avatar>
 
@@ -110,34 +124,48 @@ export default function PlaylistCard({ playlist }) {
                         </Box>
                     </Box>
 
+                    {/* Right side: buttons + expand */}
                     <Box
                         display="flex"
                         flexDirection="column"
                         alignItems="flex-end"
                     >
-                        <Box display="flex" gap={1} mb={1} flexWrap="wrap">
-                            <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                onClick={handleDelete}
-                            >
-                                Delete
-                            </Button>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                onClick={handleEdit}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                onClick={handleCopy}
-                            >
-                                Copy
-                            </Button>
+                        <Box
+                            display="flex"
+                            gap={1}
+                            mb={1}
+                            flexWrap="wrap"
+                            justifyContent="flex-end"
+                        >
+                            {/* Logged-in: Delete, Edit, Copy, Play (in that order) */}
+                            {!isGuest && (
+                                <>
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        size="small"
+                                        onClick={handleDelete}
+                                    >
+                                        Delete
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={handleEdit}
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={handleCopy}
+                                    >
+                                        Copy
+                                    </Button>
+                                </>
+                            )}
+
+                            {/* Play: always last, and visible for everyone */}
                             <Button
                                 variant="contained"
                                 size="small"

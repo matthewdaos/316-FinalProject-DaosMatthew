@@ -4,12 +4,16 @@ import PlaylistFiltersPanel from "./PlaylistFiltersPanel";
 import PlaylistList from "./PlaylistList";
 import SortMenu from "./SortMenu";
 import { GlobalStoreContext } from "../store";
+import AuthContext from "../auth";
 import MUIDeleteModal from "./MUIDeleteModal";
 import MUIEditPlaylistModal from "./MUIEditPlaylistModal";
 import MUIPlayPlaylistModal from "./MUIPlayPlaylistModal";
 
 export default function PlaylistsScreen() {
     const { store } = useContext(GlobalStoreContext);
+    const { auth } = useContext(AuthContext); 
+
+    const isGuest = !auth.loggedIn;
 
     const [filters, setFilters] = useState({
         name: "",
@@ -26,6 +30,18 @@ export default function PlaylistsScreen() {
             store.loadUserPlaylists();
         }
     }, []);
+
+    useEffect(() => {
+        if (auth.loggedIn && auth.user) {
+            store.loadUserPlaylists();
+        }
+    }, [auth.loggedIn, auth.user]);
+
+    useEffect(() => {
+        if (store.allPlaylists && store.allPlaylists.length > 0) {
+            store.searchPlaylists(filters, sortMethod);
+        }
+    }, [sortMethod, filters, store.allPlaylists?.length]);
 
     function handleSearch() {
         if (store.searchPlaylists) {
@@ -104,13 +120,13 @@ export default function PlaylistsScreen() {
                     </Button>
                 </Box>
 
-                <Button
+                {!isGuest && (<Button
                     variant="contained"
                     sx={{ borderRadius: "20px", px: 3 }}
                     onClick={() => store.createNewList && store.createNewList()}
                 >
                     New Playlist
-                </Button>
+                </Button>)}
             </Box>
 
             <MUIDeleteModal />
