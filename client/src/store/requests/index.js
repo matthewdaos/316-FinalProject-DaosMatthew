@@ -42,6 +42,10 @@ export const updatePlaylistById = (id, playlist) => {
     })
 }
 
+export const searchPlaylists = (params) => {
+    return api.get('/playlists', { params });
+}
+
 export const createSong = ({ title, artist, year, youTubeId }) => {
     return api.post(`/song`, {
         title,
@@ -72,6 +76,7 @@ const apis = {
     getPlaylistById,
     getPlaylistPairs,
     updatePlaylistById,
+    searchPlaylists,
 
     createSong,
     getSongCatalog,

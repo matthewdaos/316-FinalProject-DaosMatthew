@@ -321,13 +321,22 @@ function GlobalStoreContextProvider(props) {
             try {
                 const response = await storeRequestSender.copyPlaylistById(playlistId);
                 if (response.status === 201 && response.data.success) {
-                    const newPlaylist = response.data.playlist;
+                    const searchResp = await storeRequestSender.searchPlaylists({
+                        scope: 'mine',
+                        sortBy: 'listeners',
+                        sortDir: 'desc'
+                    });
 
-                    setStore(prev => ({
-                        ...prev,
-                        allPlaylists: [newPlaylist, ...(prev.allPlaylists || [])],
-                        playlists: [newPlaylist, ...(prev.playlists || [])]
-                    }));
+                    if (searchResp.data.success) {
+                        const playlists = searchResp.data.playlists || [];
+                        setStore(prev => ({
+                            ...prev,
+                            allPlaylists: playlists,
+                            playlists
+                        }));
+                    } else {
+                        console.error("Failed to refresh playlists after copy:", searchResp.data);
+                    }
                 } else {
                     console.error("Copy playlist failed:", response.data);
                 }
@@ -426,29 +435,27 @@ function GlobalStoreContextProvider(props) {
         }
         async function load() {
             try {
-                const response = await storeRequestSender.getPlaylistPairs();
+                const response = await storeRequestSender.searchPlaylists({
+                    scope: 'mine',       
+                    sortBy: 'listeners', 
+                    sortDir: 'desc'
+                });
+
                 if (response.data.success) {
-                    const pairsArray = response.data.idNamePairs || [];
+                    const playlists = response.data.playlists || [];
                     setStore(prev => ({
                         ...prev,
-                        allPlaylists: pairsArray,
-                        playlists: pairsArray
+                        allPlaylists: playlists,
+                        playlists
                     }));
                 }
             } catch (err) {
-                if (err.response && err.response.status === 401) {
-                    setStore(prev => ({
-                        ...prev,
-                        allPlaylists: [],
-                        playlists: [],
-                        currentList: null,
-                        idNamePairs: [],
-                        listIdMarkedForDeletion: null,
-                        listMarkedForDeletion: null
-                    }));
-                } else {
-                    console.error("Failed to load playlists:", err);
-                }
+                console.error('Failed to load playlists:', err);
+                setStore(prev => ({
+                    ...prev,
+                    allPlaylists: [],
+                    playlists: []
+                }));
             }
         }
 
