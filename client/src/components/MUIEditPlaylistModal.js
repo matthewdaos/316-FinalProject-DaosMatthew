@@ -43,10 +43,6 @@ export default function MUIEditPlaylistModal() {
         store.hideModals();
     }
 
-    function handleEditSong(index, song) {
-        store.showEditSongModal(index, song);
-    }
-
     function handleDeleteSong(index, song) {
         store.addRemoveSongTransaction(song, index);   
     }
@@ -168,12 +164,6 @@ export default function MUIEditPlaylistModal() {
                                 </Typography>
 
                                 <Box>
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => handleEditSong(index, song)}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
                                     <IconButton
                                         size="small"
                                         onClick={() => handleDeleteSong(index, song)}
