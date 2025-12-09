@@ -29,15 +29,11 @@ export default function SongCatalog({ song }) {
         }
     }
 
-    async function addToPlaylist(playlistId) {
+    function addToPlaylist(playlistId) {
         closeMenu();
-
-        if (!song || !song._id) {
-            console.error("Cannot add song to playlist — missing _id:", song);
-            return;
+        if (store.addSongFromCatalogToPlaylist) {
+            store.addSongFromCatalogToPlaylist(song, playlistId);
         }
-
-        await store.addSongToPlaylist(song._id, playlistId);
     }
 
     const listens = Number(song.listens ?? 0);
@@ -77,7 +73,6 @@ export default function SongCatalog({ song }) {
             <Menu anchorEl={anchorEl} open={open} onClose={closeMenu}>
                 <MenuItem disabled>Add to Playlist</MenuItem>
 
-                {/* ⭐ Playlist selection menu */}
                 {store.playlists && store.playlists.length > 0 ? (
                     store.playlists.map((p) => (
                         <MenuItem
