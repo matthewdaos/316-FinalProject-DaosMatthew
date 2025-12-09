@@ -12,9 +12,6 @@ import PlaylistScreen from './PlaylistScreen'
 import RegisterScreen from './RegisterScreen'
 import SongCard from './SongCard'
 import SongScreen from './SongScreen'
-import SplashScreen from './SplashScreen'
-import Statusbar from './Statusbar'
-import WorkspaceScreen from './WorkspaceScreen'
 
 export { 
     AppBanner,  
@@ -30,7 +27,4 @@ export {
     PlaylistScreen,
     SongCard,
     SongScreen,
-    RegisterScreen,
-    SplashScreen,
-    Statusbar, 
-    WorkspaceScreen }
+    RegisterScreen }
